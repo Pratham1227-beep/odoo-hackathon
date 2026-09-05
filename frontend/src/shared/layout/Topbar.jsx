@@ -55,7 +55,8 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
         <button
           onClick={toggleDarkMode}
           aria-label="Toggle dark mode"
-          className="p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          className="p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer
+          "
         >
           {isDarkMode ? (
             <Sun className="w-5 h-5 text-amber-400" />
@@ -107,23 +108,29 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
                 <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{organization?.name || 'Organization'}</p>
               </div>
 
-              <a
-                href="#profile"
-                className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
-                onClick={() => setShowProfileMenu(false)}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  navigate('/profile');
+                }}
+                className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-left cursor-pointer"
               >
                 <User className="w-4 h-4 text-slate-400" />
                 <span>My Profile</span>
-              </a>
+              </button>
 
-              <a
-                href="#settings"
-                className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors"
-                onClick={() => setShowProfileMenu(false)}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowProfileMenu(false);
+                  navigate('/settings');
+                }}
+                className="w-full flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-left cursor-pointer"
               >
                 <Settings className="w-4 h-4 text-slate-400" />
                 <span>Settings</span>
-              </a>
+              </button>
 
               <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
 

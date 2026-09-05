@@ -17,6 +17,9 @@ import PayrollPage from './features/payroll/pages/PayrollPage';
 import WorkingSchedulesPage from './features/workingSchedules/pages/WorkingSchedulesPage';
 import ContractsPage from './features/contracts/pages/ContractsPage';
 import NotificationsPage from './features/notifications/pages/NotificationsPage';
+import ReportsPage from './features/reports/pages/ReportsPage';
+import SettingsPage from './features/settings/pages/SettingsPage';
+import AdminProfilePage from './features/adminProfile/pages/AdminProfilePage';
 import AppLayout from './shared/layout/AppLayout';
 import ProtectedRoute from './shared/components/ProtectedRoute';
 
@@ -265,10 +268,50 @@ export default function App() {
           }
         />
         <Route
-          path="/activity"
+          path="/reports"
           element={
             <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <NotificationsPage />
+              <ReportsPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <SettingsPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/settings/profile"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <SettingsPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/settings/payroll"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <SettingsPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <AdminProfilePage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/admin/profile"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <AdminProfilePage />
             </AppLayout>
           }
         />
