@@ -1,4 +1,4 @@
-﻿from typing import AsyncGenerator
+from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -53,5 +53,46 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 async def init_db() -> None:
     """Initialize database tables."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    import logging
+    logger = logging.getLogger("uvicorn.error")
+
+    # Import all models inside init_db to ensure Base.metadata is fully populated without circular import issues
+    from app.features.auth.models import Organization, User  # noqa: F401
+    from app.features.organization.models import Department, Designation, WorkLocation  # noqa: F401
+    from app.features.employees.models import Employee, EmployeeBankDetail, EmployeeDocument  # noqa: F401
+    from app.features.payroll_config.models import (  # noqa: F401
+        EmployeeSalaryComponent,
+        SalaryRule,
+        SalaryStructure,
+        SalaryStructureRule,
+        SystemConfig,
+    )
+    from app.features.contracts.models import Contract  # noqa: F401
+    from app.features.attendance.models import (  # noqa: F401
+        Attendance,
+        AttendanceCorrection,
+        Holiday,
+    )
+    from app.features.time_off.models import (  # noqa: F401
+        LeaveAllocation,
+        LeaveRequest,
+        LeaveType,
+    )
+    from app.features.payroll.models import (  # noqa: F401
+        PayrollValidationIssue,
+        Payrun,
+        PayrunEmployee,
+        Payslip,
+        PayslipDelivery,
+        PayslipLine,
+    )
+    from app.core.audit import AuditLog  # noqa: F401
+    from app.features.notifications.models import Notification  # noqa: F401
+    from app.features.reports_dashboard.models import AnalyticsSnapshot  # noqa: F401
+
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database tables initialized successfully.")
+    except Exception as e:
+        logger.warning(f"Database initialization notice (tables may already exist): {e}")

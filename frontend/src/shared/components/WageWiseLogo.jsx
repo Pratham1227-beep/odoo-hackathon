@@ -1,4 +1,6 @@
 import React from "react";
+import wagewiseLogo from "../../assets/wagewise-logo.png";
+import wagewiseWordmark from "../../assets/wagewise-wordmark.png";
 
 export default function WageWiseLogo({
   className = "",
@@ -10,7 +12,7 @@ export default function WageWiseLogo({
 
       {/* Logo Mark */}
       <img
-        src="/assets/wagewise-logo.png"
+        src={wagewiseLogo}
         alt="WageWise Logo"
         className="w-10 h-10 object-contain shrink-0"
       />
@@ -18,7 +20,7 @@ export default function WageWiseLogo({
       {/* Wordmark */}
       {!iconOnly && (
         <img
-          src="/assets/wagewise-wordmark.png"
+          src={wagewiseWordmark}
           alt="WageWise"
           className="w-auto h-10 object-contain ml-2"
         />

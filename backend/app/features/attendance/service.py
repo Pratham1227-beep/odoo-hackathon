@@ -505,17 +505,18 @@ class AttendanceService:
         await db.refresh(correction)
 
         # Notify employee of correction review decision
-        emp = correction.employee or (correction.attendance.employee if correction.attendance else None)
+        emp = correction.attendance.employee if correction.attendance else None
         emp_user_id = emp.user_id if emp else None
         if emp_user_id:
             from app.features.notifications.service import NotificationService
             status_str = "approved" if correction.status == CorrectionStatus.APPROVED else "rejected"
             comment_str = f" Comment: {payload.review_comment}" if payload.review_comment else ""
+            corr_date = correction.attendance.date if correction.attendance else ""
             await NotificationService.create_notification(
                 db=db,
                 recipient_id=emp_user_id,
                 title=f"Attendance correction {status_str}",
-                message=f"Your attendance correction request for {correction.date} has been {status_str}.{comment_str}",
+                message=f"Your attendance correction request for {corr_date} has been {status_str}.{comment_str}",
                 type="CORRECTION_REVIEWED",
                 severity="INFO",
                 link=f"/attendance/corrections/{correction.id}",
