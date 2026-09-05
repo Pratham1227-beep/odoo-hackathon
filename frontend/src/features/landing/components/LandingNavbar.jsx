@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Menu, X, Sun, Moon } from 'lucide-react';
 import WageWiseLogo from '../../../shared/components/WageWiseLogo';
 
@@ -19,9 +20,9 @@ export default function LandingNavbar({ isDarkMode, toggleDarkMode }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           {/* Brand Logo */}
-          <a href="#" className="flex items-center focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg">
+          <Link to="/" className="flex items-center focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg">
             <WageWiseLogo />
-          </a>
+          </Link>
 
           {/* Desktop Nav Links */}
           <nav className="hidden md:flex items-center gap-7">
@@ -42,27 +43,27 @@ export default function LandingNavbar({ isDarkMode, toggleDarkMode }) {
             <button
               onClick={toggleDarkMode}
               aria-label="Toggle dark mode"
-              className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               {isDarkMode ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-slate-600" />}
             </button>
 
             {/* Login Button */}
-            <a
-              href="#login"
+            <Link
+              to="/login"
               className="px-4 py-2 text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-all duration-150 shadow-xs"
             >
               Login
-            </a>
+            </Link>
 
             {/* Get Started Button */}
-            <a
-              href="#get-started"
+            <Link
+              to="/signup"
               className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-lg shadow-sm active:scale-[0.98] transition-all duration-150"
             >
               Get Started
               <ArrowRight className="w-4 h-4" />
-            </a>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -102,24 +103,25 @@ export default function LandingNavbar({ isDarkMode, toggleDarkMode }) {
             ))}
           </nav>
           <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex flex-col gap-2.5">
-            <a
-              href="#login"
+            <Link
+              to="/login"
               onClick={() => setIsMobileMenuOpen(false)}
               className="w-full text-center py-2.5 text-sm font-semibold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg"
             >
               Login
-            </a>
-            <a
-              href="#get-started"
+            </Link>
+            <Link
+              to="/signup"
               onClick={() => setIsMobileMenuOpen(false)}
               className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm"
             >
               Get Started
               <ArrowRight className="w-4 h-4" />
-            </a>
+            </Link>
           </div>
         </div>
       )}
     </header>
   );
 }
+

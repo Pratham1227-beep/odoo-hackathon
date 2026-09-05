@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 
 export default function LandingCTA() {
@@ -19,13 +20,13 @@ export default function LandingCTA() {
 
           {/* Right Action Button */}
           <div className="shrink-0">
-            <a
-              href="#get-started"
+            <Link
+              to="/signup"
               className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-md active:scale-[0.98] transition-all"
             >
               Get Started
               <ArrowRight className="w-5 h-5" />
-            </a>
+            </Link>
           </div>
 
         </div>
@@ -33,3 +34,4 @@ export default function LandingCTA() {
     </section>
   );
 }
+
