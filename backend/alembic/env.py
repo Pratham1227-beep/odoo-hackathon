@@ -25,6 +25,12 @@ from app.features.attendance.models import (  # noqa: F401
     AttendanceCorrection,
     Holiday,
 )
+from app.features.time_off.models import (  # noqa: F401
+    LeaveAllocation,
+    LeaveRequest,
+    LeaveType,
+)
+
 
 
 
