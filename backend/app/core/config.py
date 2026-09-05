@@ -1,26 +1,38 @@
-from typing import Any, Union
+﻿from typing import Any, Union
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "FastAPI Production Starter"
+    PROJECT_NAME: str = "PeoplePay360"
+    PROJECT_SLOGAN: str = "WageWise Enterprise Payroll & HR"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     DEBUG: bool = True
     ENVIRONMENT: str = "development"
 
-    # Security & Auth
-    SECRET_KEY: str = "default_secret_key_change_in_production_32_chars_long"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-
     # Database
-    DATABASE_URL: str = "sqlite+aiosqlite:///./app.db"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/peoplepay360"
 
-    # CORS
-    CORS_ORIGINS: Union[list[str], str] = ["*"]
+    # Security & Auth
+    JWT_SECRET_KEY: str = "peoplepay360_super_secret_jwt_key_for_hackathon_2026_change_in_prod"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    OTP_EXPIRE_MINUTES: int = 10
+
+    # SMTP / Mailer settings
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USER: str | None = None
+    SMTP_PASSWORD: str | None = None
+    SMTP_FROM_EMAIL: str = "no-reply@peoplepay360.com"
+
+    # Frontend URL (for email links, redirects)
+    FRONTEND_URL: str = "http://localhost:5173"
+
+    # CORS Origins
+    CORS_ORIGINS: Union[list[str], str] = ["http://localhost:5173", "http://localhost:3000", "*"]
 
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod

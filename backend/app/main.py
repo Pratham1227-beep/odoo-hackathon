@@ -1,17 +1,16 @@
-from contextlib import asynccontextmanager
+﻿from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.v1.api import api_router
+from app.api import api_router
 from app.core.config import settings
 from app.core.database import engine, init_db
 from app.core.exceptions import setup_exception_handlers
-from app.features.health.router import router as health_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup actions
+    # Startup actions (table initialization if dev/sqlite)
     await init_db()
     yield
     # Shutdown actions
@@ -20,6 +19,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
+    description=settings.PROJECT_SLOGAN,
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
@@ -27,10 +27,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Exception handlers
+# Exception handlers registration
 setup_exception_handlers(app)
 
-# CORS Middleware
+# CORS Configuration
 if settings.CORS_ORIGINS:
     app.add_middleware(
         CORSMiddleware,
@@ -40,18 +40,23 @@ if settings.CORS_ORIGINS:
         allow_headers=["*"],
     )
 
-# Direct health routes at root level for load balancers / container orchestrators
-app.include_router(health_router)
 
-# Versioned API Router (/api/v1)
+@app.get("/health", tags=["Health"], summary="System Health Check")
+async def health():
+    """Top-level health check endpoint."""
+    return {"status": "ok"}
+
+
+# Mount versioned API routes
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/", include_in_schema=False)
 async def root():
     return {
-        "message": f"Welcome to {settings.PROJECT_NAME}",
+        "project": settings.PROJECT_NAME,
+        "slogan": settings.PROJECT_SLOGAN,
+        "version": settings.VERSION,
         "docs": "/docs",
         "health": "/health",
-        "db_health": "/health/db",
     }

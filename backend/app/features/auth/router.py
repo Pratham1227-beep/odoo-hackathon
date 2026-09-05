@@ -1,86 +1,144 @@
-from fastapi import APIRouter, Depends, status
-from fastapi.security import OAuth2PasswordRequestForm
+﻿from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.features.auth.dependencies import get_current_user
-from app.features.auth.schemas import LoginRequest, RefreshTokenRequest, Token
+from app.features.auth.models import User
+from app.features.auth.schemas import (
+    AuthResponse,
+    ChangePasswordRequest,
+    ForgotPasswordRequest,
+    LoginRequest,
+    RefreshTokenRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+    TokenResponse,
+    UserProfileResponse,
+    VerifyOtpRequest,
+    VerifyOtpResponse,
+)
 from app.features.auth.service import AuthService
-from app.features.users.models import User
-from app.features.users.schemas import UserCreate, UserRead
+from app.shared.base_schema import MessageResponse
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post(
     "/register",
+    response_model=AuthResponse,
     status_code=status.HTTP_201_CREATED,
-    summary="Register new user",
-    description="Registers a new user in the system and returns user info along with access and refresh tokens.",
+    summary="Tenant Self-Registration",
+    description="Registers a new Organization and creates its initial Administrator user.",
 )
 async def register(
-    user_in: UserCreate,
+    req: RegisterRequest,
     db: AsyncSession = Depends(get_db),
-) -> dict:
-    auth_service = AuthService(db)
-    user, token = await auth_service.register(user_in)
-    return {
-        "user": user,
-        "token": token,
-    }
+) -> AuthResponse:
+    service = AuthService(db)
+    return await service.register(req)
 
 
 @router.post(
     "/login",
-    response_model=Token,
+    response_model=AuthResponse,
     summary="User Login",
-    description="Authenticates user with email & password and returns JWT access & refresh tokens.",
+    description="Authenticates user with email & password, returning user profile, organization, and JWT tokens.",
 )
 async def login(
-    login_data: LoginRequest,
+    req: LoginRequest,
     db: AsyncSession = Depends(get_db),
-) -> Token:
-    auth_service = AuthService(db)
-    _, token = await auth_service.authenticate(login_data.email, login_data.password)
-    return token
+) -> AuthResponse:
+    service = AuthService(db)
+    return await service.login(req)
 
 
 @router.post(
-    "/login/oauth2",
-    response_model=Token,
-    summary="OAuth2 Compatible Login Form",
-    description="Standard OAuth2 form login for OpenAPI Swagger UI compatibility.",
-)
-async def login_oauth2(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_db),
-) -> Token:
-    auth_service = AuthService(db)
-    _, token = await auth_service.authenticate(form_data.username, form_data.password)
-    return token
-
-
-@router.post(
-    "/refresh",
-    response_model=Token,
+    "/refresh-token",
+    response_model=TokenResponse,
     summary="Refresh Access Token",
-    description="Exchanges a valid refresh token for a new set of access and refresh tokens.",
+    description="Exchanges a valid refresh token for new access and refresh tokens, verifying token_version.",
 )
 async def refresh_token(
-    refresh_data: RefreshTokenRequest,
+    req: RefreshTokenRequest,
     db: AsyncSession = Depends(get_db),
-) -> Token:
-    auth_service = AuthService(db)
-    return await auth_service.refresh_tokens(refresh_data.refresh_token)
+) -> TokenResponse:
+    service = AuthService(db)
+    return await service.refresh_tokens(req)
+
+
+@router.post(
+    "/forgot-password",
+    response_model=MessageResponse,
+    summary="Request Password Reset OTP",
+    description="Generates a 6-digit OTP code and dispatches it via email. Always returns a success message.",
+)
+async def forgot_password(
+    req: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    service = AuthService(db)
+    await service.forgot_password(req)
+    return MessageResponse(
+        message="If this email is registered in our system, a verification OTP code has been dispatched."
+    )
+
+
+@router.post(
+    "/verify-otp",
+    response_model=VerifyOtpResponse,
+    summary="Verify OTP Code",
+    description="Validates the OTP code received by email and issues a temporary single-use reset token.",
+)
+async def verify_otp(
+    req: VerifyOtpRequest,
+    db: AsyncSession = Depends(get_db),
+) -> VerifyOtpResponse:
+    service = AuthService(db)
+    return await service.verify_otp(req)
+
+
+@router.post(
+    "/reset-password",
+    response_model=MessageResponse,
+    summary="Reset Password",
+    description="Sets a new password using the reset token and invalidates all prior login sessions.",
+)
+async def reset_password(
+    req: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    service = AuthService(db)
+    await service.reset_password(req)
+    return MessageResponse(
+        message="Password has been reset successfully. All existing sessions have been invalidated."
+    )
+
+
+@router.post(
+    "/change-password",
+    response_model=MessageResponse,
+    summary="Change Password (Authenticated)",
+    description="Allows authenticated users to change their password, immediately bumping token_version to invalidate prior sessions.",
+)
+async def change_password(
+    req: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    service = AuthService(db)
+    await service.change_password(current_user, req)
+    return MessageResponse(
+        message="Password updated successfully. Other active sessions have been invalidated."
+    )
 
 
 @router.get(
     "/me",
-    response_model=UserRead,
+    response_model=UserProfileResponse,
     summary="Get Current Authenticated User",
-    description="Returns the profile details of the currently authenticated user.",
+    description="Returns the profile and organization details of the current authenticated user.",
 )
 async def get_me(
     current_user: User = Depends(get_current_user),
-) -> UserRead:
-    return UserRead.model_validate(current_user)
+) -> UserProfileResponse:
+    return UserProfileResponse.model_validate(current_user)
