@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import pool
@@ -10,6 +10,17 @@ from app.shared.base_model import Base
 
 # Import all models so Alembic autogenerate discovers them
 from app.features.auth.models import Organization, User  # noqa: F401
+from app.features.organization.models import Department, Designation, WorkLocation  # noqa: F401
+from app.features.employees.models import Employee, EmployeeBankDetail, EmployeeDocument  # noqa: F401
+from app.features.payroll_config.models import (  # noqa: F401
+    EmployeeSalaryComponent,
+    SalaryRule,
+    SalaryStructure,
+    SalaryStructureRule,
+    SystemConfig,
+)
+from app.features.contracts.models import Contract  # noqa: F401
+
 
 config = context.config
 
