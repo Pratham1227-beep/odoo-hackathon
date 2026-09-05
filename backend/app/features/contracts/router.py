@@ -91,5 +91,6 @@ async def update_contract(
     db: AsyncSession = Depends(get_db),
 ):
     return await ContractService.update_contract(
-        db, current_user.organization_id, contract_id, payload
+        db, current_user.organization_id, contract_id, payload, current_user=current_user
     )
+

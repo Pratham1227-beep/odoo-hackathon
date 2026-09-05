@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
+from app.features.auth.models import User
 from app.features.employees.models import Employee
 from app.features.payroll_config.models import (
     EmployeeSalaryComponent,
@@ -112,7 +113,9 @@ class SalaryRuleService:
         db: AsyncSession,
         org_id: uuid.UUID,
         payload: SalaryRuleCreate,
+        current_user: Optional[User] = None,
     ) -> SalaryRuleResponse:
+
         existing = await SalaryRuleRepository.get_by_code(db, org_id, payload.code)
         if existing:
             raise ConflictError(f"Salary rule with code '{payload.code}' already exists")
@@ -144,6 +147,19 @@ class SalaryRuleService:
             is_active=payload.is_active,
         )
         created = await SalaryRuleRepository.create(db, rule)
+
+        from app.core.audit import log_audit
+        await log_audit(
+            db=db,
+            user=current_user,
+            action="CREATE",
+            module="SALARY_CONFIG",
+            resource_type="SalaryRule",
+            resource_id=created.id,
+            after={"code": created.code, "name": created.name, "category": created.category.value if hasattr(created.category, "value") else str(created.category)},
+            org_id=org_id,
+        )
+
         return SalaryRuleResponse.model_validate(created)
 
     @classmethod
@@ -175,11 +191,13 @@ class SalaryRuleService:
         org_id: uuid.UUID,
         rule_id: uuid.UUID,
         payload: SalaryRuleUpdate,
+        current_user: Optional[User] = None,
     ) -> SalaryRuleResponse:
         rule = await SalaryRuleRepository.get_by_id(db, org_id, rule_id)
         if not rule:
             raise NotFoundError(f"Salary rule with ID '{rule_id}' not found")
 
+        old_state = {"code": rule.code, "name": rule.name, "category": rule.category.value if hasattr(rule.category, "value") else str(rule.category)}
         update_dict = payload.model_dump(exclude_unset=True)
         if "code" in update_dict and update_dict["code"] != rule.code:
             existing = await SalaryRuleRepository.get_by_code(db, org_id, update_dict["code"])
@@ -206,7 +224,22 @@ class SalaryRuleService:
         )
 
         updated = await SalaryRuleRepository.update(db, rule, update_dict)
+
+        from app.core.audit import log_audit
+        await log_audit(
+            db=db,
+            user=current_user,
+            action="UPDATE",
+            module="SALARY_CONFIG",
+            resource_type="SalaryRule",
+            resource_id=updated.id,
+            before=old_state,
+            after={"code": updated.code, "name": updated.name, "category": updated.category.value if hasattr(updated.category, "value") else str(updated.category)},
+            org_id=org_id,
+        )
+
         return SalaryRuleResponse.model_validate(updated)
+
 
 
 class SalaryStructureService:

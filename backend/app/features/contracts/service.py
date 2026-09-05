@@ -5,6 +5,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
+from app.features.auth.models import User
 from app.features.contracts.models import Contract
 from app.features.contracts.repository import ContractRepository
 from app.features.contracts.schemas import (
@@ -169,7 +170,9 @@ class ContractService:
         org_id: uuid.UUID,
         contract_id: uuid.UUID,
         payload: ContractUpdate,
+        current_user: Optional[User] = None,
     ) -> ContractResponse:
+
         contract = await ContractRepository.get_by_id(db, org_id, contract_id)
         if not contract:
             raise NotFoundError(f"Contract with ID '{contract_id}' not found")
@@ -221,5 +224,24 @@ class ContractService:
                     f"Employee already has an active contract ({overlapping.contract_number}) overlapping with period {target_start} to {target_end or 'indefinite'}"
                 )
 
+        old_status = contract.status.value if hasattr(contract.status, "value") else str(contract.status)
         updated = await ContractRepository.update(db, contract, update_dict)
+
+        new_status = updated.status.value if hasattr(updated.status, "value") else str(updated.status)
+
+        if old_status != new_status or "status" in update_dict:
+            from app.core.audit import log_audit
+            await log_audit(
+                db=db,
+                user=current_user,
+                action="UPDATE",
+                module="CONTRACTS",
+                resource_type="Contract",
+                resource_id=contract.id,
+                before={"status": old_status},
+                after={"status": new_status},
+                org_id=org_id,
+            )
+
         return cls._map_contract_response(updated)
+
