@@ -1,17 +1,12 @@
-from typing import AsyncGenerator
+﻿from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
-
-
-class Base(DeclarativeBase):
-    """Base ORM model class for SQLAlchemy declarative models."""
-    pass
+from app.shared.base_model import Base
 
 
 def get_engine_kwargs(database_url: str) -> dict:
@@ -23,7 +18,7 @@ def get_engine_kwargs(database_url: str) -> dict:
     if database_url.startswith("sqlite"):
         kwargs["connect_args"] = {"check_same_thread": False}
     else:
-        # PostgreSQL / other async engines pool configuration
+        # PostgreSQL / asyncpg pool configuration
         kwargs["pool_pre_ping"] = True
         kwargs["pool_size"] = 10
         kwargs["max_overflow"] = 20
@@ -57,6 +52,6 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Initialize database tables (useful for dev / sqlite)."""
+    """Initialize database tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
