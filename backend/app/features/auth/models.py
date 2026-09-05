@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 import uuid
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, Enum as SAEnum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.shared.base_model import BaseModel, GUID
@@ -93,6 +93,11 @@ class User(BaseModel):
     token_version: Mapped[int] = mapped_column(
         Integer,
         default=0,
+        nullable=False,
+    )
+    must_change_password: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
         nullable=False,
     )
     last_login: Mapped[Optional[datetime]] = mapped_column(

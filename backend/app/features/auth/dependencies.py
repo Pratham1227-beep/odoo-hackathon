@@ -1,4 +1,4 @@
-﻿import uuid
+import uuid
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select

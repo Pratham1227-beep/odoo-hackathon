@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from typing import Optional
 import uuid
 from pydantic import EmailStr, Field
@@ -34,6 +34,7 @@ class UserResponse(IDSchema, TimestampSchema):
     role: UserRole
     status: UserStatus
     token_version: int
+    must_change_password: bool = False
     last_login: Optional[datetime] = None
 
 
