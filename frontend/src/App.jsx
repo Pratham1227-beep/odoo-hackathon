@@ -9,6 +9,7 @@ import EmployeeProfilePage from './features/employees/pages/EmployeeProfilePage'
 import AttendancePage from './features/attendance/pages/AttendancePage';
 import TimeOffPage from './features/timeOff/pages/TimeOffPage';
 import LeaveRequestPage from './features/leaveRequest/pages/LeaveRequestPage';
+import SalarySetupPage from './features/salarySetup/pages/SalarySetupPage';
 import AppLayout from './shared/layout/AppLayout';
 
 export default function App() {
@@ -98,6 +99,14 @@ export default function App() {
           element={
             <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
               <LeaveRequestPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/salary-setup"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <SalarySetupPage />
             </AppLayout>
           }
         />
