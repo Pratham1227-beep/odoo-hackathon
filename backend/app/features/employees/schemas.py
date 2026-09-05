@@ -109,7 +109,7 @@ class EmployeeBase(BaseSchema):
     )
     first_name: str = Field(..., min_length=1, max_length=100)
     last_name: str = Field(default="", max_length=100)
-    email: EmailStr = Field(..., description="Corporate or official employee email")
+    email: str = Field(..., description="Corporate or official employee email")
     phone: Optional[str] = Field(None, max_length=50)
 
     gender: Gender = Gender.NOT_SPECIFIED
@@ -154,7 +154,7 @@ class EmployeeCreate(EmployeeBase):
 class EmployeeUpdate(BaseSchema):
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     gender: Optional[Gender] = None
     marital_status: Optional[MaritalStatus] = None
@@ -234,7 +234,7 @@ class BulkEmployeeImportItem(BaseSchema):
     employee_code: Optional[str] = None
     first_name: str
     last_name: str
-    email: EmailStr
+    email: str
     phone: Optional[str] = None
     gender: Optional[Gender] = Gender.NOT_SPECIFIED
     joining_date: date

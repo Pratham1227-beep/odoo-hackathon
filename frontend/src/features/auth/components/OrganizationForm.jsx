@@ -55,7 +55,7 @@ export default function OrganizationForm({
 
     if (!formData.workEmail?.trim()) {
       newErrors.workEmail = 'Work email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.workEmail.trim())) {
+    } else if (!/^[^\s@]+@[^\s@]+$/.test(formData.workEmail.trim())) {
       newErrors.workEmail = 'Please enter a valid work email';
     }
 

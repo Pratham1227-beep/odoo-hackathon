@@ -34,7 +34,7 @@ export default function AdminForm({
 
     if (!formData.adminEmail?.trim()) {
       newErrors.adminEmail = 'Work email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.adminEmail.trim())) {
+    } else if (!/^[^\s@]+@[^\s@]+$/.test(formData.adminEmail.trim())) {
       newErrors.adminEmail = 'Please enter a valid work email';
     }
 

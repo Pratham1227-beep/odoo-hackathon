@@ -38,7 +38,7 @@ export default function LoginForm({ onSubmit, apiError }) {
 
     if (!email.trim()) {
       newErrors.email = 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+    } else if (!/^[^\s@]+@[^\s@]+$/.test(email.trim())) {
       newErrors.email = 'Please enter a valid email address';
     }
 

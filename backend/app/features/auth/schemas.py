@@ -18,7 +18,7 @@ class TokenResponse(BaseSchema):
 class OrganizationResponse(IDSchema, TimestampSchema):
     name: str
     code: str
-    email: EmailStr
+    email: str
     phone: Optional[str] = None
     currency: str
     timezone: str
@@ -30,7 +30,7 @@ class OrganizationResponse(IDSchema, TimestampSchema):
 
 class UserResponse(IDSchema, TimestampSchema):
     organization_id: uuid.UUID
-    email: EmailStr
+    email: str
     role: UserRole
     status: UserStatus
     token_version: int
@@ -46,7 +46,7 @@ class RegisterRequest(BaseSchema):
     """Tenant self-registration request (creates Organization + first ADMIN user)."""
     org_name: str = Field(..., min_length=2, max_length=255, description="Company / Organization Name")
     org_code: str = Field(..., min_length=2, max_length=50, description="Unique tenant slug / code (e.g. ACME)")
-    org_email: EmailStr = Field(..., description="Organization primary email")
+    org_email: str = Field(..., description="Organization primary email")
     phone: Optional[str] = Field(None, max_length=50)
     currency: str = Field(default="INR", max_length=10)
     timezone: str = Field(default="Asia/Kolkata", max_length=50)
@@ -54,12 +54,12 @@ class RegisterRequest(BaseSchema):
     address: Optional[str] = Field(None, max_length=500)
     
     # Admin User credentials
-    admin_email: EmailStr = Field(..., description="Primary Administrator Email")
+    admin_email: str = Field(..., description="Primary Administrator Email")
     password: str = Field(..., min_length=8, description="Admin password (min 8 chars)")
 
 
 class LoginRequest(BaseSchema):
-    email: EmailStr
+    email: str
     password: str = Field(..., description="User login password")
 
 
@@ -68,11 +68,11 @@ class RefreshTokenRequest(BaseSchema):
 
 
 class ForgotPasswordRequest(BaseSchema):
-    email: EmailStr = Field(..., description="Registered user email")
+    email: str = Field(..., description="Registered user email")
 
 
 class VerifyOtpRequest(BaseSchema):
-    email: EmailStr = Field(..., description="Registered user email")
+    email: str = Field(..., description="Registered user email")
     otp: str = Field(..., min_length=6, max_length=6, description="6-digit numeric OTP")
 
 

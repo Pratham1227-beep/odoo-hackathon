@@ -69,19 +69,19 @@ class Payrun(OrgScopedModel):
         "PayrunEmployee",
         back_populates="payrun",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
     issues: Mapped[List["PayrollValidationIssue"]] = relationship(
         "PayrollValidationIssue",
         back_populates="payrun",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
     payslips: Mapped[List["Payslip"]] = relationship(
         "Payslip",
         back_populates="payrun",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
 
 
@@ -234,13 +234,13 @@ class Payslip(OrgScopedModel):
         back_populates="payslip",
         cascade="all, delete-orphan",
         order_by="PayslipLine.sequence",
-        lazy="selectin",
+        lazy="select",
     )
     deliveries: Mapped[List["PayslipDelivery"]] = relationship(
         "PayslipDelivery",
         back_populates="payslip",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
 
 

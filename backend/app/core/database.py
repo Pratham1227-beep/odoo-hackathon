@@ -12,7 +12,7 @@ from app.shared.base_model import Base
 def get_engine_kwargs(database_url: str) -> dict:
     """Return engine arguments tailored for SQLite vs PostgreSQL."""
     kwargs: dict = {
-        "echo": settings.DEBUG and settings.ENVIRONMENT == "development",
+        "echo": False,
         "future": True,
     }
     if database_url.startswith("sqlite"):
@@ -55,20 +55,26 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def init_db() -> None:
-    """Initialize database tables by loading all models first."""
-    import app.features.attendance.models  # noqa: F401
-    import app.features.auth.models  # noqa: F401
-    import app.features.contracts.models  # noqa: F401
-    import app.features.employees.models  # noqa: F401
-    import app.features.notifications.models  # noqa: F401
+def import_all_models() -> None:
+    """Import all SQLAlchemy models so relationships and mappers are registered."""
     import app.features.organization.models  # noqa: F401
-    import app.features.payroll.models  # noqa: F401
-    import app.features.payroll_config.models  # noqa: F401
-    import app.features.reports_dashboard.models  # noqa: F401
+    import app.features.auth.models  # noqa: F401
+    import app.features.employees.models  # noqa: F401
+    import app.features.contracts.models  # noqa: F401
+    import app.features.attendance.models  # noqa: F401
     import app.features.time_off.models  # noqa: F401
+    import app.features.payroll_config.models  # noqa: F401
+    import app.features.payroll.models  # noqa: F401
+    import app.features.reports_dashboard.models  # noqa: F401
+    import app.features.notifications.models  # noqa: F401
     import app.core.audit  # noqa: F401
 
+# Register all models on module load
+import_all_models()
+
+
+async def init_db() -> None:
+    """Initialize database tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

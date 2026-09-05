@@ -70,7 +70,7 @@ export default function AddEmployeeModal({
     if (!formData.name.trim()) errs.name = 'Full name is required';
     if (!formData.email.trim()) {
       errs.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+    } else if (!/^[^\s@]+@[^\s@]+$/.test(formData.email.trim())) {
       errs.email = 'Enter a valid email';
     }
     if (!formData.role.trim()) errs.role = 'Role / Position is required';
