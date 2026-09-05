@@ -1,10 +1,13 @@
 from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Optional
+import logging
 import uuid
+import resend
 from sqlalchemy import extract, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.core.config import settings
 from app.core.exceptions import ConflictError, NotFoundError, ValidationError
 from app.core.security import hash_password
 from app.features.auth.models import User
@@ -325,6 +328,7 @@ class EmployeeService:
 
         # 5. Handle user account creation if requested
         user_account_id: Optional[uuid.UUID] = None
+        temporary_password: Optional[str] = None
         if payload.create_user_account:
             # Check if user already exists
             user_stmt = select(User).where(User.email == email_clean)
@@ -334,14 +338,25 @@ class EmployeeService:
                     raise ConflictError("User account with this email already belongs to another tenant")
                 user_account_id = existing_user.id
             else:
-                if not payload.password:
-                    raise ValidationError("Password is required when creating a user login account")
+                import string
+                import random
+                
+                # Generate temporary password if not provided
+                if payload.password:
+                    raw_password = payload.password
+                else:
+                    # e.g., first_name@1234
+                    random_digits = ''.join(random.choices(string.digits, k=4))
+                    raw_password = f"{payload.first_name.lower().split()[0]}@{random_digits}"
+                    temporary_password = raw_password
+
                 new_user = User(
                     organization_id=org_id,
                     email=email_clean,
-                    password_hash=hash_password(payload.password),
+                    password_hash=hash_password(raw_password),
                     role=payload.user_role or UserRole.EMPLOYEE,
                     status=UserStatus.ACTIVE,
+                    must_change_password=bool(temporary_password), # Force change if generated
                 )
                 db.add(new_user)
                 await db.flush()
@@ -395,7 +410,38 @@ class EmployeeService:
             db.add(bank)
 
         await db.commit()
-        return await EmployeeService.get_employee_by_id(db, org_id, new_emp.id)
+        ret = await EmployeeService.get_employee_by_id(db, org_id, new_emp.id)
+        if temporary_password:
+            ret["temporary_password"] = temporary_password
+            
+            # Send Email via Resend
+            if settings.RESEND_API_KEY:
+                try:
+                    resend.api_key = settings.RESEND_API_KEY
+                    email_html = f"""
+                    <div style="font-family: sans-serif; padding: 20px;">
+                        <h2>Welcome to {settings.PROJECT_NAME}, {payload.first_name}!</h2>
+                        <p>An administrator has created your employee profile and generated temporary login credentials for you.</p>
+                        <div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <p style="margin: 5px 0;"><strong>Email:</strong> {email_clean}</p>
+                            <p style="margin: 5px 0;"><strong>Temporary Password:</strong> {temporary_password}</p>
+                        </div>
+                        <p>You will be required to change your password immediately upon logging in.</p>
+                        <br/>
+                        <a href="{settings.FRONTEND_URL}/login" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">Login to Your Dashboard</a>
+                    </div>
+                    """
+                    resend.Emails.send({
+                        "from": settings.RESEND_FROM_EMAIL,
+                        "to": email_clean,
+                        "subject": f"Welcome to {settings.PROJECT_NAME} - Your Login Credentials",
+                        "html": email_html
+                    })
+                    logging.info(f"Successfully sent credential email to {email_clean} via Resend.")
+                except Exception as e:
+                    logging.error(f"Failed to send email to {email_clean}: {e}")
+
+        return ret
 
     # ==========================================
     # Update Employee

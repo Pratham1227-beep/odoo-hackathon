@@ -17,7 +17,8 @@ export default function LoginPage({ isDarkMode, toggleDarkMode }) {
       await login(credentials);
       navigate('/dashboard');
     } catch (err) {
-      setApiError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.detail || 'Failed to login. Please check your credentials.';
+      setApiError(errorMessage);
       throw err;
     }
   };

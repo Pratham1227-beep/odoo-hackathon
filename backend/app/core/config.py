@@ -1,4 +1,4 @@
-﻿from typing import Any, Union
+from typing import Any, Union
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -27,6 +27,10 @@ class Settings(BaseSettings):
     SMTP_USER: str | None = None
     SMTP_PASSWORD: str | None = None
     SMTP_FROM_EMAIL: str = "no-reply@peoplepay360.com"
+
+    # Resend Email Settings
+    RESEND_API_KEY: str | None = None
+    RESEND_FROM_EMAIL: str = "no-reply@amaal.neargrab.in"
 
     # Frontend URL (for email links, redirects)
     FRONTEND_URL: str = "http://localhost:5173"

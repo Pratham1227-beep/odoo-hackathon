@@ -197,6 +197,7 @@ class EmployeeResponse(EmployeeBase, IDSchema, TimestampSchema):
 class EmployeeDetailResponse(EmployeeResponse):
     documents: List[EmployeeDocumentResponse] = []
     direct_reports_count: int = 0
+    temporary_password: Optional[str] = None
 
 
 # ==========================================

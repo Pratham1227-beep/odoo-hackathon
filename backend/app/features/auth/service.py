@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Tuple
 import uuid
 import jwt
@@ -270,6 +270,7 @@ class AuthService:
         user.token_version += 1
         user.otp_code_hash = None
         user.otp_expires_at = None
+        user.must_change_password = False
         await self.db.commit()
 
     async def change_password(self, user: User, req: ChangePasswordRequest) -> None:
@@ -279,4 +280,5 @@ class AuthService:
 
         user.password_hash = hash_password(req.new_password)
         user.token_version += 1
+        user.must_change_password = False
         await self.db.commit()
