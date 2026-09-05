@@ -1,4 +1,4 @@
-﻿"""Initial migration: organizations and users tables
+"""Initial migration: organizations and users tables
 
 Revision ID: 0001_initial
 Revises: 
@@ -47,6 +47,7 @@ def upgrade() -> None:
         sa.Column("role", sa.String(50), server_default="EMPLOYEE", nullable=False),
         sa.Column("status", sa.String(50), server_default="ACTIVE", nullable=False),
         sa.Column("token_version", sa.Integer(), server_default="0", nullable=False),
+        sa.Column("must_change_password", sa.Boolean(), server_default="0", nullable=False),
         sa.Column("last_login", sa.DateTime(timezone=True), nullable=True),
         sa.Column("otp_code_hash", sa.String(255), nullable=True),
         sa.Column("otp_expires_at", sa.DateTime(timezone=True), nullable=True),

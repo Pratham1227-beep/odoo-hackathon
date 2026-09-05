@@ -17,6 +17,7 @@ export default function TimeOffRowActions({
   onReject,
   onEdit,
   onCancel,
+  isHR = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
@@ -36,8 +37,8 @@ export default function TimeOffRowActions({
     };
   }, [isOpen]);
 
-  const isPending = request.status === 'Pending';
-  const isApproved = request.status === 'Approved';
+  const isPending = request.status === 'PENDING';
+  const isApproved = request.status === 'APPROVED';
 
   return (
     <div className="relative inline-block text-left" ref={menuRef}>
@@ -64,7 +65,7 @@ export default function TimeOffRowActions({
           </button>
 
           {/* Pending Actions: Approve, Reject, Edit */}
-          {isPending && (
+          {isHR && isPending && (
             <>
               <button
                 onClick={() => {
@@ -102,7 +103,7 @@ export default function TimeOffRowActions({
           )}
 
           {/* Cancel Request (For Pending & Approved) */}
-          {(isPending || isApproved) && (
+          {isHR && (isPending || isApproved) && (
             <button
               onClick={() => {
                 setIsOpen(false);
@@ -115,19 +116,22 @@ export default function TimeOffRowActions({
             </button>
           )}
 
-          <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
-
-          {/* View Employee Profile */}
-          <button
-            onClick={() => {
-              setIsOpen(false);
-              navigate(`/employees/${request.employeeId}`);
-            }}
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors text-left cursor-pointer"
-          >
-            <User className="w-3.5 h-3.5 text-indigo-500" />
-            <span>View Employee</span>
-          </button>
+          {isHR && (
+            <>
+              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+              {/* View Employee Profile */}
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate(`/employees/${request.employee_id}`);
+                }}
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors text-left cursor-pointer"
+              >
+                <User className="w-3.5 h-3.5 text-indigo-500" />
+                <span>View Employee</span>
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

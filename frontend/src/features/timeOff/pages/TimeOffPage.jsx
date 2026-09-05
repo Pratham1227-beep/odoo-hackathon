@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import TimeOffHeader from '../components/TimeOffHeader';
 import TimeOffStats from '../components/TimeOffStats';
 import TimeOffFilters from '../components/TimeOffFilters';
@@ -8,24 +8,35 @@ import LeaveBalanceCard from '../components/LeaveBalanceCard';
 import RequestTimeOffCard from '../components/RequestTimeOffCard';
 import CompanyHolidaysCard from '../components/CompanyHolidaysCard';
 import NewTimeOffModal from '../components/NewTimeOffModal';
+import NewAllocationModal from '../components/NewAllocationModal';
+import NewLeaveTypeModal from '../components/NewLeaveTypeModal';
 import ApproveRejectModal from '../components/ApproveRejectModal';
 import TimeOffDetailModal from '../components/TimeOffDetailModal';
-import {
-  generateFullRequests,
-  initialLeaveBalances,
-  companyHolidays,
-} from '../data/timeOffData';
-import { CheckCircle2, UserCheck, Download, X } from 'lucide-react';
+import { timeOffService } from '../services/timeOffService';
+import { employeeService } from '../../employees/services/employeeService';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { CheckCircle2, UserCheck, Download, X, RefreshCw, AlertTriangle } from 'lucide-react';
 
 export default function TimeOffPage() {
-  const [requests, setRequests] = useState(() => generateFullRequests());
-  const [leaveBalances, setLeaveBalances] = useState(initialLeaveBalances);
-  const [activeTab, setActiveTab] = useState('All');
+  const { user } = useAuthStore();
+  const HR_ROLES = ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER'];
+  const isHR = Boolean(user && HR_ROLES.includes(user.role));
+
+  // API Data State
+  const [requests, setRequests] = useState([]);
+  const [allocations, setAllocations] = useState([]);
+  const [leaveTypes, setLeaveTypes] = useState([]);
+  const [holidays, setHolidays] = useState([]);
+  const [activeEmployees, setActiveEmployees] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
+
+  // Filters and UI state
+  const [activeTab, setActiveTab] = useState('All'); // 'All', 'PENDING', 'APPROVED', 'REJECTED'
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     leaveType: 'All Types',
     status: 'All Statuses',
-    department: 'All Departments',
   });
   const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -33,6 +44,9 @@ export default function TimeOffPage() {
 
   // Modal States
   const [isNewRequestModalOpen, setIsNewRequestModalOpen] = useState(false);
+  const [isNewAllocationModalOpen, setIsNewAllocationModalOpen] = useState(false);
+  const [isNewLeaveTypeModalOpen, setIsNewLeaveTypeModalOpen] = useState(false);
+
   const [requestToEdit, setRequestToEdit] = useState(null);
   const [confirmModal, setConfirmModal] = useState({
     isOpen: false,
@@ -54,56 +68,92 @@ export default function TimeOffPage() {
     }, 3500);
   };
 
-  // Derive Statistics from dataset
+  // Fetch data from backend
+  const fetchData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setFetchError(null);
+
+      const [reqData, allocData, typesData, holData] = await Promise.all([
+        timeOffService.listRequests(),
+        timeOffService.listAllocations({ year: new Date().getFullYear() }),
+        timeOffService.listLeaveTypes(),
+        timeOffService.listHolidays(new Date().getFullYear()),
+      ]);
+
+      setRequests(reqData || []);
+      setAllocations(allocData || []);
+      setLeaveTypes(typesData || []);
+      setHolidays(holData || []);
+
+      if (isHR) {
+        try {
+          const empList = await employeeService.listAllActiveEmployees();
+          setActiveEmployees(empList || []);
+        } catch {
+          setActiveEmployees([]);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching time-off data:', err);
+      setFetchError(err.response?.data?.detail || err.message || 'Failed to load time off records.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isHR]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Statistics
   const stats = useMemo(() => {
-    const pending = requests.filter((r) => r.status === 'Pending').length;
-    const approved = requests.filter((r) => r.status === 'Approved').length;
-    const rejected = requests.filter((r) => r.status === 'Rejected').length;
-    const cancelled = requests.filter((r) => r.status === 'Cancelled').length;
-    const upcoming = 18; // 18 upcoming time off scheduled for the current month
+    const pending = requests.filter((r) => r.status === 'PENDING').length;
+    const approved = requests.filter((r) => r.status === 'APPROVED').length;
+    const rejected = requests.filter((r) => r.status === 'REJECTED').length;
+    const upcoming = approved; // Upcoming scheduled approved leaves
 
     return {
       all: requests.length,
       pending,
       approved,
       rejected,
-      cancelled,
       upcoming,
     };
   }, [requests]);
 
   // Tab counts
-  const tabCounts = useMemo(() => ({
-    all: requests.length,
-    pending: stats.pending,
-    approved: stats.approved,
-    rejected: stats.rejected,
-    cancelled: stats.cancelled,
-  }), [requests.length, stats]);
+  const tabCounts = useMemo(
+    () => ({
+      all: stats.all,
+      pending: stats.pending,
+      approved: stats.approved,
+      rejected: stats.rejected,
+    }),
+    [stats]
+  );
 
   // Filtered requests
   const filteredRequests = useMemo(() => {
     return requests.filter((req) => {
       // 1. Tab filter
-      if (activeTab === 'Pending' && req.status !== 'Pending') return false;
-      if (activeTab === 'Approved' && req.status !== 'Approved') return false;
-      if (activeTab === 'Rejected' && req.status !== 'Rejected') return false;
-      if (activeTab === 'Cancelled' && req.status !== 'Cancelled') return false;
+      if (activeTab && activeTab !== 'All' && req.status !== activeTab) return false;
 
-      // 2. Search query (matches name, id, leave type)
+      // 2. Search query (matches name, code, leave type, reason)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesName = req.employeeName.toLowerCase().includes(q);
-        const matchesId = req.employeeId.toLowerCase().includes(q);
-        const matchesType = req.leaveType.toLowerCase().includes(q);
-        if (!matchesName && !matchesId && !matchesType) return false;
+        const matchesName = (req.employee_name || '').toLowerCase().includes(q);
+        const matchesCode = (req.employee_code || '').toLowerCase().includes(q);
+        const matchesType = (req.leave_type_name || '').toLowerCase().includes(q);
+        const matchesReason = (req.reason || '').toLowerCase().includes(q);
+        if (!matchesName && !matchesCode && !matchesType && !matchesReason) return false;
       }
 
       // 3. Leave Type filter
       if (
         filters.leaveType &&
         filters.leaveType !== 'All Types' &&
-        req.leaveType !== filters.leaveType
+        req.leave_type_name !== filters.leaveType
       ) {
         return false;
       }
@@ -113,15 +163,6 @@ export default function TimeOffPage() {
         filters.status &&
         filters.status !== 'All Statuses' &&
         req.status !== filters.status
-      ) {
-        return false;
-      }
-
-      // 5. Department filter
-      if (
-        filters.department &&
-        filters.department !== 'All Departments' &&
-        req.department !== filters.department
       ) {
         return false;
       }
@@ -159,7 +200,6 @@ export default function TimeOffPage() {
     setFilters({
       leaveType: 'All Types',
       status: 'All Statuses',
-      department: 'All Departments',
     });
     setSearchQuery('');
     setActiveTab('All');
@@ -180,71 +220,78 @@ export default function TimeOffPage() {
     }
   };
 
-  // Submit new/edited request
-  const handleSaveRequest = (formData) => {
-    if (formData.id) {
-      setRequests((prev) =>
-        prev.map((r) => (r.id === formData.id ? { ...r, ...formData } : r))
-      );
-      showToast(`Updated request ${formData.id} for ${formData.employeeName}`);
-    } else {
-      const newId = `REQ-0${requests.length + 1}`;
-      const newReq = {
-        ...formData,
-        id: newId,
-      };
-      setRequests((prev) => [newReq, ...prev]);
-      showToast(`Submitted leave request for ${formData.employeeName}`);
+  // Create new request
+  const handleSaveRequest = async (payload) => {
+    try {
+      await timeOffService.createRequest(payload);
+      showToast('Submitted leave request successfully!');
+      fetchData();
+    } catch (err) {
+      showToast(err.response?.data?.detail || err.message || 'Failed to submit request.');
     }
   };
 
-  // Confirm approve / reject / cancel
-  const handleConfirmAction = ({ request, mode, rejectionReason }) => {
-    if (mode === 'approve') {
-      setRequests((prev) =>
-        prev.map((r) => (r.id === request.id ? { ...r, status: 'Approved' } : r))
-      );
+  // Grant allocation
+  const handleCreateAllocation = async (payload) => {
+    try {
+      await timeOffService.createAllocation(payload);
+      showToast('Granted leave allocation successfully!');
+      fetchData();
+    } catch (err) {
+      showToast(err.response?.data?.detail || err.message || 'Failed to grant allocation.');
+    }
+  };
 
-      // Deduct from leave balance if matching leave type
-      setLeaveBalances((prev) =>
-        prev.map((b) =>
-          b.name.toLowerCase() === request.leaveType.toLowerCase()
-            ? { ...b, used: Math.min(b.total, b.used + (request.days || 1)) }
-            : b
-        )
-      );
+  // Create leave type
+  const handleCreateLeaveType = async (payload) => {
+    try {
+      await timeOffService.createLeaveType(payload);
+      showToast(`Created leave type "${payload.name}" successfully!`);
+      fetchData();
+    } catch (err) {
+      showToast(err.response?.data?.detail || err.message || 'Failed to create leave type.');
+    }
+  };
 
-      showToast(`Approved ${request.leaveType} for ${request.employeeName}`);
-    } else if (mode === 'reject') {
-      setRequests((prev) =>
-        prev.map((r) =>
-          r.id === request.id
-            ? {
-                ...r,
-                status: 'Rejected',
-                rejectionReason: rejectionReason || 'Request rejected by HR.',
-              }
-            : r
-        )
-      );
-      showToast(`Rejected leave request for ${request.employeeName}`);
-    } else if (mode === 'cancel') {
-      setRequests((prev) =>
-        prev.map((r) => (r.id === request.id ? { ...r, status: 'Cancelled' } : r))
-      );
-      showToast(`Cancelled leave request for ${request.employeeName}`);
+  // Confirm review (Approve / Reject)
+  const handleConfirmAction = async ({ request, mode, rejectionReason }) => {
+    try {
+      if (mode === 'approve') {
+        await timeOffService.reviewRequest(request.id, {
+          status: 'APPROVED',
+          review_comment: 'Approved by management',
+        });
+        showToast(`Approved leave request for ${request.employee_name}`);
+      } else if (mode === 'reject') {
+        await timeOffService.reviewRequest(request.id, {
+          status: 'REJECTED',
+          review_comment: rejectionReason || 'Request rejected by management',
+        });
+        showToast(`Rejected leave request for ${request.employee_name}`);
+      }
+      fetchData();
+    } catch (err) {
+      showToast(err.response?.data?.detail || err.message || 'Action failed.');
     }
   };
 
   // Batch approve
-  const handleBatchApprove = () => {
-    setRequests((prev) =>
-      prev.map((r) =>
-        selectedIds.includes(r.id) ? { ...r, status: 'Approved' } : r
-      )
-    );
-    showToast(`Approved ${selectedIds.length} time off requests`);
+  const handleBatchApprove = async () => {
+    let successCount = 0;
+    for (const reqId of selectedIds) {
+      try {
+        await timeOffService.reviewRequest(reqId, {
+          status: 'APPROVED',
+          review_comment: 'Batch approved',
+        });
+        successCount += 1;
+      } catch (err) {
+        console.error(`Failed to approve ${reqId}:`, err);
+      }
+    }
+    showToast(`Batch approved ${successCount} request(s)!`);
     setSelectedIds([]);
+    fetchData();
   };
 
   // Export CSV
@@ -256,9 +303,8 @@ export default function TimeOffPage() {
 
     const headers = [
       'Request ID',
-      'Employee ID',
-      'Name',
-      'Department',
+      'Employee Code',
+      'Employee Name',
       'Leave Type',
       'Start Date',
       'End Date',
@@ -273,15 +319,14 @@ export default function TimeOffPage() {
       ...toExport.map((r) =>
         [
           `"${r.id}"`,
-          `"${r.employeeId}"`,
-          `"${r.employeeName}"`,
-          `"${r.department}"`,
-          `"${r.leaveType}"`,
-          `"${r.startDate}"`,
-          `"${r.endDate}"`,
-          `"${r.days}"`,
-          `"${r.status}"`,
-          `"${r.appliedOn}"`,
+          `"${r.employee_code || ''}"`,
+          `"${r.employee_name || ''}"`,
+          `"${r.leave_type_name || ''}"`,
+          `"${r.start_date || ''}"`,
+          `"${r.end_date || ''}"`,
+          `"${r.days || ''}"`,
+          `"${r.status || ''}"`,
+          `"${r.created_at ? new Date(r.created_at).toLocaleDateString() : ''}"`,
           `"${r.reason || ''}"`,
         ].join(',')
       ),
@@ -291,12 +336,15 @@ export default function TimeOffPage() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `WageWise_TimeOff_Requests.csv`);
+    link.setAttribute('download', `TimeOff_Requests.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     showToast(`Exported ${toExport.length} requests to CSV`);
   };
+
+
+
 
   return (
     <div className="space-y-6 pb-10 animate-in fade-in duration-200 relative">
@@ -314,9 +362,29 @@ export default function TimeOffPage() {
           setRequestToEdit(null);
           setIsNewRequestModalOpen(true);
         }}
+        onOpenAllocation={isHR ? () => setIsNewAllocationModalOpen(true) : undefined}
+        onOpenNewLeaveType={isHR ? () => setIsNewLeaveTypeModalOpen(true) : undefined}
+        isHR={isHR}
       />
 
-      {/* 4 KPI Statistics Cards */}
+      {/* Error state alert */}
+      {fetchError && (
+        <div className="p-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-2xl flex items-center justify-between text-xs text-rose-600 dark:text-rose-400 font-medium">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 shrink-0" />
+            <span>{fetchError}</span>
+          </div>
+          <button
+            onClick={fetchData}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
+
+      {/* KPI Statistics Cards */}
       <TimeOffStats
         pendingCount={stats.pending}
         approvedCount={stats.approved}
@@ -324,12 +392,10 @@ export default function TimeOffPage() {
         upcomingCount={stats.upcoming}
       />
 
-      {/* Main Grid: Left Column (Table Card) + Right Sidebar */}
+      {/* Main Grid: Left Table + Right Sidebar */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-        
         {/* Left Column (8 cols on XL) */}
         <div className="xl:col-span-8 space-y-4">
-          
           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800/80 shadow-xs space-y-4">
             
             {/* Filter Tabs & Search & Filter */}
@@ -342,6 +408,7 @@ export default function TimeOffPage() {
               filters={filters}
               onFilterChange={handleFilterChange}
               onResetFilters={handleResetFilters}
+              leaveTypes={leaveTypes}
             />
 
             {/* Batch Selection Banner */}
@@ -349,15 +416,19 @@ export default function TimeOffPage() {
               <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 rounded-2xl animate-in fade-in duration-150">
                 <div className="flex items-center gap-2 text-xs font-semibold text-indigo-900 dark:text-indigo-200">
                   <UserCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span>{selectedIds.length} request{selectedIds.length > 1 ? 's' : ''} selected</span>
+                  <span>
+                    {selectedIds.length} request{selectedIds.length > 1 ? 's' : ''} selected
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleBatchApprove}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
-                  >
-                    Approve Selected
-                  </button>
+                  {isHR && (
+                    <button
+                      onClick={handleBatchApprove}
+                      className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                    >
+                      Approve Selected
+                    </button>
+                  )}
                   <button
                     onClick={handleExportData}
                     className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 text-xs font-semibold cursor-pointer inline-flex items-center gap-1.5"
@@ -376,21 +447,29 @@ export default function TimeOffPage() {
               </div>
             )}
 
-            {/* Table */}
-            <TimeOffTable
-              requests={paginatedRequests}
-              selectedIds={selectedIds}
-              onToggleSelect={handleToggleSelect}
-              onToggleSelectAll={handleToggleSelectAll}
-              onViewDetails={(req) => setDetailModal({ isOpen: true, request: req })}
-              onApprove={(req) => setConfirmModal({ isOpen: true, mode: 'approve', request: req })}
-              onReject={(req) => setConfirmModal({ isOpen: true, mode: 'reject', request: req })}
-              onCancel={(req) => setConfirmModal({ isOpen: true, mode: 'cancel', request: req })}
-              onEdit={(req) => {
-                setRequestToEdit(req);
-                setIsNewRequestModalOpen(true);
-              }}
-            />
+            {/* Table or Loading */}
+            {isLoading ? (
+              <div className="py-16 text-center text-xs font-medium text-slate-400 animate-pulse flex flex-col items-center justify-center gap-2">
+                <RefreshCw className="w-6 h-6 animate-spin text-indigo-500" />
+                <span>Loading time off requests...</span>
+              </div>
+            ) : (
+              <TimeOffTable
+                requests={paginatedRequests}
+                selectedIds={selectedIds}
+                onToggleSelect={handleToggleSelect}
+                onToggleSelectAll={handleToggleSelectAll}
+                onViewDetails={(req) => setDetailModal({ isOpen: true, request: req })}
+                onApprove={(req) => setConfirmModal({ isOpen: true, mode: 'approve', request: req })}
+                onReject={(req) => setConfirmModal({ isOpen: true, mode: 'reject', request: req })}
+                onCancel={(req) => setConfirmModal({ isOpen: true, mode: 'cancel', request: req })}
+                onEdit={(req) => {
+                  setRequestToEdit(req);
+                  setIsNewRequestModalOpen(true);
+                }}
+                isHR={isHR}
+              />
+            )}
 
             {/* Pagination */}
             <TimeOffPagination
@@ -401,18 +480,15 @@ export default function TimeOffPage() {
               endIndex={endIndex}
               onPageChange={setCurrentPage}
             />
-
           </div>
-
         </div>
 
         {/* Right Sidebar Column (4 cols on XL) */}
         <div className="xl:col-span-4 space-y-6">
-          
           {/* Leave Balance Card */}
           <LeaveBalanceCard
-            balances={leaveBalances}
-            onViewAll={() => showToast('Displaying comprehensive leave balance policy.')}
+            allocations={allocations}
+            onViewAll={() => showToast('Displaying annual leave balance entitlement.')}
           />
 
           {/* Request Time Off Card */}
@@ -425,12 +501,10 @@ export default function TimeOffPage() {
 
           {/* Company Holidays Card */}
           <CompanyHolidaysCard
-            holidays={companyHolidays}
-            onViewAll={() => showToast('Displaying annual company holiday calendar.')}
+            holidays={holidays}
+            onViewAll={() => showToast('Displaying official company holiday calendar.')}
           />
-
         </div>
-
       </div>
 
       {/* Modals */}
@@ -439,7 +513,28 @@ export default function TimeOffPage() {
         onClose={() => setIsNewRequestModalOpen(false)}
         onSubmit={handleSaveRequest}
         requestToEdit={requestToEdit}
+        leaveTypes={leaveTypes}
+        employees={activeEmployees}
+        isHR={isHR}
       />
+
+      {isHR && (
+        <>
+          <NewAllocationModal
+            isOpen={isNewAllocationModalOpen}
+            onClose={() => setIsNewAllocationModalOpen(false)}
+            onSubmit={handleCreateAllocation}
+            leaveTypes={leaveTypes}
+            employees={activeEmployees}
+          />
+
+          <NewLeaveTypeModal
+            isOpen={isNewLeaveTypeModalOpen}
+            onClose={() => setIsNewLeaveTypeModalOpen(false)}
+            onSubmit={handleCreateLeaveType}
+          />
+        </>
+      )}
 
       <ApproveRejectModal
         isOpen={confirmModal.isOpen}
@@ -455,8 +550,8 @@ export default function TimeOffPage() {
         onClose={() => setDetailModal({ isOpen: false, request: null })}
         onApprove={(req) => setConfirmModal({ isOpen: true, mode: 'approve', request: req })}
         onReject={(req) => setConfirmModal({ isOpen: true, mode: 'reject', request: req })}
+        isHR={isHR}
       />
-
     </div>
   );
 }

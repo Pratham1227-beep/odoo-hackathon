@@ -5,18 +5,31 @@ import {
   User,
   Heart,
   Clock,
+  Calendar,
 } from 'lucide-react';
 
-const iconMap = {
-  Palmtree: { icon: Palmtree, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/60' },
-  Cross: { icon: PlusSquare, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-950/60' },
-  User: { icon: User, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-950/60' },
-  Heart: { icon: Heart, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/60' },
-  Clock: { icon: Clock, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/60' },
+const getIconConfig = (name) => {
+  const lowerName = name.toLowerCase();
+  if (lowerName.includes('annual') || lowerName.includes('paid')) {
+    return { icon: Palmtree, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/60' };
+  }
+  if (lowerName.includes('sick')) {
+    return { icon: PlusSquare, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-950/60' };
+  }
+  if (lowerName.includes('personal')) {
+    return { icon: User, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-950/60' };
+  }
+  if (lowerName.includes('maternity') || lowerName.includes('paternity')) {
+    return { icon: Heart, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-950/60' };
+  }
+  if (lowerName.includes('compensatory') || lowerName.includes('comp')) {
+    return { icon: Clock, color: 'text-indigo-500', bg: 'bg-indigo-50 dark:bg-indigo-950/60' };
+  }
+  return { icon: Calendar, color: 'text-slate-500', bg: 'bg-slate-100 dark:bg-slate-800' };
 };
 
 export default function LeaveBalanceCard({
-  balances = [],
+  allocations = [],
   onViewAll,
 }) {
   return (
@@ -36,10 +49,13 @@ export default function LeaveBalanceCard({
 
       {/* Balances List */}
       <div className="space-y-3.5">
-        {balances.map((item) => {
-          const iconConfig = iconMap[item.icon] || iconMap.Palmtree;
+        {allocations.map((item) => {
+          const iconConfig = getIconConfig(item.leave_type_name);
           const IconComponent = iconConfig.icon;
-          const pct = Math.min(100, Math.round((item.used / (item.total || 1)) * 100));
+          
+          const used = parseFloat(item.used_days || "0");
+          const allocated = parseFloat(item.allocated_days || "0");
+          const pct = Math.min(100, Math.round((used / (allocated || 1)) * 100));
 
           return (
             <div key={item.id} className="space-y-1.5">
@@ -52,14 +68,14 @@ export default function LeaveBalanceCard({
                     <IconComponent className={`w-3.5 h-3.5 ${iconConfig.color}`} />
                   </div>
                   <span className="font-semibold text-slate-700 dark:text-slate-300">
-                    {item.name}
+                    {item.leave_type_name}
                   </span>
                 </div>
 
                 {/* Right: Used / Total */}
                 <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                  <span className="font-bold text-slate-900 dark:text-white">{item.used}</span>
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500"> / {item.total} {item.unit}</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{used}</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500"> / {allocated} days</span>
                 </div>
               </div>
 

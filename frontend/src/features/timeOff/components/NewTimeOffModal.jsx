@@ -1,55 +1,61 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, User, FileText, UploadCloud, AlertCircle } from 'lucide-react';
-import { mockEmployees } from '../data/timeOffData';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 export default function NewTimeOffModal({
   isOpen,
   onClose,
   onSubmit,
   requestToEdit = null,
+  leaveTypes = [],
+  employees = [],
 }) {
+  const { user } = useAuthStore();
+  const isHR = user && ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_USER', 'HR_PAYROLL_MANAGER'].includes(user.role);
+
+  const defaultStartDate = new Date().toISOString().split('T')[0];
+  const defaultEndDate = defaultStartDate;
+
   const [formData, setFormData] = useState({
-    employeeId: 'EMP001',
-    leaveType: 'Annual Leave',
-    startDate: '2026-09-12',
-    endDate: '2026-09-15',
+    employee_id: '',
+    leave_type_id: '',
+    start_date: defaultStartDate,
+    end_date: defaultEndDate,
     reason: '',
-    attachmentName: '',
   });
 
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (requestToEdit) {
       setFormData({
         id: requestToEdit.id,
-        employeeId: requestToEdit.employeeId,
-        leaveType: requestToEdit.leaveType,
-        startDate: requestToEdit.startDate,
-        endDate: requestToEdit.endDate,
+        employee_id: requestToEdit.employee_id || '',
+        leave_type_id: requestToEdit.leave_type_id || (leaveTypes[0]?.id || ''),
+        start_date: requestToEdit.start_date || defaultStartDate,
+        end_date: requestToEdit.end_date || defaultEndDate,
         reason: requestToEdit.reason || '',
-        attachmentName: '',
       });
     } else {
       setFormData({
-        employeeId: 'EMP001',
-        leaveType: 'Annual Leave',
-        startDate: '2026-09-12',
-        endDate: '2026-09-15',
+        employee_id: isHR && employees.length > 0 ? employees[0].id : '',
+        leave_type_id: leaveTypes.length > 0 ? leaveTypes[0].id : '',
+        start_date: defaultStartDate,
+        end_date: defaultEndDate,
         reason: '',
-        attachmentName: '',
       });
     }
     setError('');
-  }, [requestToEdit, isOpen]);
+  }, [requestToEdit, isOpen, leaveTypes, employees, isHR]);
 
   if (!isOpen) return null;
 
   // Calculate days duration
   const calculateDays = () => {
     try {
-      const start = new Date(formData.startDate);
-      const end = new Date(formData.endDate);
+      const start = new Date(formData.start_date);
+      const end = new Date(formData.end_date);
       if (isNaN(start.getTime()) || isNaN(end.getTime())) return 1;
       const diffTime = end.getTime() - start.getTime();
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
@@ -61,36 +67,47 @@ export default function NewTimeOffModal({
 
   const calculatedDays = calculateDays();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (new Date(formData.endDate) < new Date(formData.startDate)) {
+    setError('');
+
+    if (new Date(formData.end_date) < new Date(formData.start_date)) {
       setError('End date cannot be earlier than start date.');
       return;
     }
+    if (!formData.leave_type_id) {
+      setError('Please select a leave type.');
+      return;
+    }
+    if (!formData.reason.trim()) {
+      setError('Please provide a reason for the leave request.');
+      return;
+    }
 
-    const matchedEmp = mockEmployees.find((e) => e.id === formData.employeeId);
+    try {
+      setIsSubmitting(true);
+      const payload = {
+        leave_type_id: formData.leave_type_id,
+        start_date: formData.start_date,
+        end_date: formData.end_date,
+        reason: formData.reason.trim(),
+      };
 
-    // Format date string e.g. "12 Sep 2026"
-    const formatDateStr = (dStr) => {
-      try {
-        const d = new Date(dStr);
-        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-      } catch {
-        return dStr;
+      if (isHR && formData.employee_id) {
+        payload.employee_id = formData.employee_id;
       }
-    };
 
-    onSubmit({
-      ...formData,
-      employeeName: matchedEmp ? matchedEmp.name : 'Ayesha Siddiqui',
-      department: matchedEmp ? matchedEmp.department : 'Engineering',
-      startDate: formatDateStr(formData.startDate),
-      endDate: formatDateStr(formData.endDate),
-      days: calculatedDays,
-      status: requestToEdit ? requestToEdit.status : 'Pending',
-      appliedOn: '05 Sep 2026',
-    });
-    onClose();
+      await onSubmit(payload);
+      onClose();
+    } catch (err) {
+      setError(
+        err.response?.data?.detail ||
+          err.message ||
+          'Failed to submit leave request.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -124,57 +141,59 @@ export default function NewTimeOffModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
-          {/* Employee */}
+          {/* Employee Selection (Visible if HR filing on-behalf) */}
+          {isHR && employees.length > 0 && (
+            <div className="space-y-1.5">
+              <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-slate-400" />
+                <span>On Behalf of Employee</span>
+              </label>
+              <select
+                value={formData.employee_id}
+                onChange={(e) => setFormData({ ...formData, employee_id: e.target.value })}
+                className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              >
+                <option value="">-- Myself / Default --</option>
+                {employees.map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.first_name} {emp.last_name} ({emp.employee_code || emp.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Leave Type */}
           <div className="space-y-1.5">
-            <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-slate-400" />
-              <span>Employee</span>
+            <label className="font-bold text-slate-700 dark:text-slate-300">
+              Leave Type <span className="text-rose-500">*</span>
             </label>
             <select
-              value={formData.employeeId}
-              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              value={formData.leave_type_id}
+              onChange={(e) => setFormData({ ...formData, leave_type_id: e.target.value })}
+              required
+              className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-semibold"
             >
-              {mockEmployees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.name} ({emp.id}) — {emp.department}
+              <option value="">-- Select Leave Type --</option>
+              {leaveTypes.map((lt) => (
+                <option key={lt.id} value={lt.id}>
+                  {lt.name} ({lt.code})
                 </option>
               ))}
             </select>
           </div>
 
-          {/* Leave Type */}
-          <div className="space-y-1.5">
-            <label className="font-bold text-slate-700 dark:text-slate-300">
-              Leave Type
-            </label>
-            <select
-              value={formData.leaveType}
-              onChange={(e) => setFormData({ ...formData, leaveType: e.target.value })}
-              className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 font-semibold"
-            >
-              <option value="Annual Leave">Annual Leave</option>
-              <option value="Sick Leave">Sick Leave</option>
-              <option value="Work From Home">Work From Home</option>
-              <option value="Personal Leave">Personal Leave</option>
-              <option value="Maternity Leave">Maternity Leave</option>
-              <option value="Unpaid Leave">Unpaid Leave</option>
-              <option value="Bereavement Leave">Bereavement Leave</option>
-              <option value="Compensatory Off">Compensatory Off</option>
-            </select>
-          </div>
-
-          {/* Dates & Duration */}
+          {/* Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <span>Start Date</span>
+                <span>Start Date <span className="text-rose-500">*</span></span>
               </label>
               <input
                 type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                value={formData.start_date}
+                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
                 required
                 className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
@@ -183,12 +202,12 @@ export default function NewTimeOffModal({
             <div className="space-y-1.5">
               <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                <span>End Date</span>
+                <span>End Date <span className="text-rose-500">*</span></span>
               </label>
               <input
                 type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                value={formData.end_date}
+                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
                 required
                 className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
               />
@@ -209,7 +228,7 @@ export default function NewTimeOffModal({
           <div className="space-y-1.5">
             <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
               <FileText className="w-3.5 h-3.5 text-slate-400" />
-              <span>Reason / Remarks</span>
+              <span>Reason / Remarks <span className="text-rose-500">*</span></span>
             </label>
             <textarea
               rows={3}
@@ -219,19 +238,6 @@ export default function NewTimeOffModal({
               required
               className="w-full px-3.5 py-2.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
             />
-          </div>
-
-          {/* Attachment */}
-          <div className="space-y-1.5">
-            <label className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-              <UploadCloud className="w-3.5 h-3.5 text-slate-400" />
-              <span>Supporting Documents (Optional)</span>
-            </label>
-            <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-center hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer">
-              <p className="text-slate-500 dark:text-slate-400 text-xs">
-                Click or drag medical certificates or leave documents here
-              </p>
-            </div>
           </div>
 
           {/* Actions */}
@@ -245,9 +251,10 @@ export default function NewTimeOffModal({
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-500/25 transition-all cursor-pointer"
+              disabled={isSubmitting}
+              className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold shadow-md shadow-indigo-500/25 transition-all cursor-pointer"
             >
-              {requestToEdit ? 'Save Changes' : 'Submit Request'}
+              {isSubmitting ? 'Submitting...' : requestToEdit ? 'Save Changes' : 'Submit Request'}
             </button>
           </div>
         </form>

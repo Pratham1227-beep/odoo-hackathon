@@ -1,4 +1,4 @@
-﻿from typing import AsyncGenerator
+from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -25,9 +25,13 @@ def get_engine_kwargs(database_url: str) -> dict:
     return kwargs
 
 
+db_url = settings.DATABASE_URL
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+
 engine: AsyncEngine = create_async_engine(
-    settings.DATABASE_URL,
-    **get_engine_kwargs(settings.DATABASE_URL),
+    db_url,
+    **get_engine_kwargs(db_url),
 )
 
 AsyncSessionLocal = async_sessionmaker(

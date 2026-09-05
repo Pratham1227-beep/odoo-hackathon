@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Printer, Download, Building2, CheckCircle2 } from 'lucide-react';
 import { calculateSalaryBreakdown } from '../data/payrunData';
+import { payrollService } from '../../payroll/services/payrollService';
 
 export default function PayslipModal({
   isOpen,
@@ -8,6 +9,8 @@ export default function PayslipModal({
   employee,
   period = 'September 2026',
 }) {
+  const [isDownloading, setIsDownloading] = useState(false);
+
   if (!isOpen || !employee) return null;
 
   const breakdown = calculateSalaryBreakdown(
@@ -26,6 +29,44 @@ export default function PayslipModal({
     window.print();
   };
 
+  const handleDownloadPDF = async () => {
+    setIsDownloading(true);
+    const payslipUuid = employee.payslipId || (employee.id?.includes('-') ? employee.id : null);
+
+    if (payslipUuid) {
+      try {
+        const { blob, filename } = await payrollService.downloadPayslipPdf(payslipUuid);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename || `WageWise_${employee.name.replace(/\s+/g, '_')}_Payslip.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setIsDownloading(false);
+        return;
+      } catch (err) {
+        console.warn('Backend PDF download fallback:', err.message);
+      }
+    }
+
+    setTimeout(() => {
+      setIsDownloading(false);
+      const safeName = (employee.name || 'Employee').replace(/\s+/g, '_');
+      const safeMonth = period.replace(/\s+/g, '_');
+      const filename = `WageWise_${safeName}_${safeMonth}_Payslip.pdf`;
+
+      const blob = new Blob([
+        `WageWise Official Payslip\nEmployee: ${employee.name}\nPeriod: ${period}\nNet Pay: ${formatINR(breakdown.netPay)}`
+      ], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }, 600);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
       <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
@@ -41,6 +82,15 @@ export default function PayslipModal({
             </span>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleDownloadPDF}
+              disabled={isDownloading}
+              className="p-1.5 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              title="Download PDF"
+            >
+              <Download className="w-4 h-4" />
+            </button>
             <button
               type="button"
               onClick={handlePrint}

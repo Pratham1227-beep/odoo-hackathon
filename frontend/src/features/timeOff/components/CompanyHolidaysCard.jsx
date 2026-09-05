@@ -1,5 +1,10 @@
 import React from 'react';
 
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
 export default function CompanyHolidaysCard({
   holidays = [],
   onViewAll,
@@ -27,7 +32,7 @@ export default function CompanyHolidaysCard({
             className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 py-1 border-b border-slate-50 dark:border-slate-800/50 last:border-none"
           >
             <span className="text-slate-900 dark:text-white font-semibold">
-              {h.date}
+              {formatDate(h.date)}
             </span>
             <span className="text-slate-600 dark:text-slate-400 text-right">
               {h.name}

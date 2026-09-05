@@ -6,6 +6,7 @@ export default function TimeOffStats({
   approvedCount = 48,
   rejectedCount = 5,
   upcomingCount = 18,
+  isLoading = false,
 }) {
   const stats = [
     {
@@ -58,9 +59,13 @@ export default function TimeOffStats({
 
             {/* Value & Label */}
             <div className="flex-1 min-w-0">
-              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none block">
-                {item.value}
-              </span>
+              {isLoading ? (
+                <div className="animate-pulse bg-slate-200 dark:bg-slate-700 rounded h-8 w-16 mb-1" />
+              ) : (
+                <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-none block">
+                  {item.value}
+                </span>
+              )}
               <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
                 {SubIcon && <SubIcon className="w-3.5 h-3.5 text-slate-400" />}
                 <span>{item.label}</span>
