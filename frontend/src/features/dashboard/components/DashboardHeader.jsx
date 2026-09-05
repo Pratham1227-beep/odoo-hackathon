@@ -17,6 +17,7 @@ export default function DashboardHeader() {
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
           Manage your workforce, track payroll and keep everything on schedule.
+
         </p>
       </div>
 
