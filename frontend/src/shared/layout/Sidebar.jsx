@@ -12,7 +12,8 @@ import {
   Sparkles,
   X,
   FileText,
-  SlidersHorizontal
+  SlidersHorizontal,
+  PlayCircle
 } from 'lucide-react';
 import WageWiseLogo from '../components/WageWiseLogo';
 
@@ -24,6 +25,7 @@ const navItems = [
   { name: 'Leave Request', path: '/leave-request', icon: FileText },
   { name: 'Payroll', path: '/payroll', icon: Coins },
   { name: 'Salary Setup', path: '/salary-setup', icon: SlidersHorizontal },
+  { name: 'Payrun', path: '/payrun', icon: PlayCircle },
   { name: 'Reports', path: '/reports', icon: BarChart3 },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
@@ -71,9 +73,9 @@ export default function Sidebar({ isOpen, onClose }) {
                   to={item.path}
                   onClick={() => onClose && onClose()}
                   className={({ isActive }) =>
-                    `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 ${
+                    `flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 relative ${
                       isActive
-                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold shadow-2xs'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold shadow-2xs before:absolute before:-left-4 before:top-2 before:bottom-2 before:w-1.5 before:bg-indigo-600 before:rounded-r-md'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
                     }`
                   }
