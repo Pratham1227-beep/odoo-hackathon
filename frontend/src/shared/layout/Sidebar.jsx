@@ -13,7 +13,8 @@ import {
   X,
   FileText,
   SlidersHorizontal,
-  PlayCircle
+  PlayCircle,
+  Receipt
 } from 'lucide-react';
 import WageWiseLogo from '../components/WageWiseLogo';
 
@@ -26,6 +27,7 @@ const navItems = [
   { name: 'Payroll', path: '/payroll', icon: Coins },
   { name: 'Salary Setup', path: '/salary-setup', icon: SlidersHorizontal },
   { name: 'Payrun', path: '/payrun', icon: PlayCircle },
+  { name: 'Payslips', path: '/payslips', icon: Receipt },
   { name: 'Reports', path: '/reports', icon: BarChart3 },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];

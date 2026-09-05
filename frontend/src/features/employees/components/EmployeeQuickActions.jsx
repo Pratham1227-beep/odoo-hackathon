@@ -37,7 +37,7 @@ export default function EmployeeQuickActions({ actions, employeeId }) {
     } else if (id === 'qa-apply-leave') {
       navigate(`/leave-management?employee=${employeeId}`);
     } else if (id === 'qa-view-payslips') {
-      navigate(`/payroll?employee=${employeeId}`);
+      navigate(`/payroll/payslips/${employeeId}`);
     } else if (id === 'qa-download-documents') {
       alert('Downloading consolidated employee documents package...');
     }
