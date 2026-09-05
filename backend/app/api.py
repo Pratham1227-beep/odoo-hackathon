@@ -1,4 +1,9 @@
 from fastapi import APIRouter
+
+from app.features.attendance.router import (
+    attendance_router,
+    holidays_router,
+)
 from app.features.auth.router import router as auth_router
 from app.features.contracts.router import router as contracts_router
 from app.features.employees.router import router as employees_router
@@ -13,4 +18,7 @@ api_router.include_router(organization_router)
 api_router.include_router(employees_router)
 api_router.include_router(payroll_config_router)
 api_router.include_router(contracts_router)
+api_router.include_router(attendance_router)
+api_router.include_router(holidays_router)
+
 

@@ -1,4 +1,4 @@
-﻿from typing import Any, Optional
+from typing import Any, Optional
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
@@ -18,6 +18,16 @@ class AppException(Exception):
         self.code = code
         self.details = details
         super().__init__(message)
+
+
+class BadRequestError(AppException):
+    def __init__(self, message: str = "Bad request", details: Optional[Any] = None):
+        super().__init__(
+            message=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            code="BAD_REQUEST",
+            details=details,
+        )
 
 
 class NotFoundError(AppException):
