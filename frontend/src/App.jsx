@@ -4,6 +4,9 @@ import LandingPage from './features/landing/pages/LandingPage';
 import SignupPage from './features/auth/pages/SignupPage';
 import LoginPage from './features/auth/pages/LoginPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
+import EmployeesPage from './features/employees/pages/EmployeesPage';
+import EmployeeProfilePage from './features/employees/pages/EmployeeProfilePage';
+import AttendancePage from './features/attendance/pages/AttendancePage';
 import AppLayout from './shared/layout/AppLayout';
 
 export default function App() {
@@ -45,6 +48,30 @@ export default function App() {
           element={
             <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
               <DashboardPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/employees"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <EmployeesPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/employees/:employeeId"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <EmployeeProfilePage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <AttendancePage />
             </AppLayout>
           }
         />
