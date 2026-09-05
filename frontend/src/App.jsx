@@ -7,6 +7,8 @@ import DashboardPage from './features/dashboard/pages/DashboardPage';
 import EmployeesPage from './features/employees/pages/EmployeesPage';
 import EmployeeProfilePage from './features/employees/pages/EmployeeProfilePage';
 import AttendancePage from './features/attendance/pages/AttendancePage';
+import TimeOffPage from './features/timeOff/pages/TimeOffPage';
+import LeaveRequestPage from './features/leaveRequest/pages/LeaveRequestPage';
 import AppLayout from './shared/layout/AppLayout';
 
 export default function App() {
@@ -72,6 +74,30 @@ export default function App() {
           element={
             <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
               <AttendancePage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/time-off"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <TimeOffPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/leave-request"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <LeaveRequestPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/leave-management"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <LeaveRequestPage />
             </AppLayout>
           }
         />
