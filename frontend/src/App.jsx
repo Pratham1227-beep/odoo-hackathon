@@ -15,6 +15,8 @@ import PayrunProcessingPage from './features/payrun/pages/PayrunProcessingPage';
 import PayslipViewPage from './features/payrun/pages/PayslipViewPage';
 import PayrollPage from './features/payroll/pages/PayrollPage';
 import WorkingSchedulesPage from './features/workingSchedules/pages/WorkingSchedulesPage';
+import ContractsPage from './features/contracts/pages/ContractsPage';
+import NotificationsPage from './features/notifications/pages/NotificationsPage';
 import AppLayout from './shared/layout/AppLayout';
 import ProtectedRoute from './shared/components/ProtectedRoute';
 
@@ -227,6 +229,46 @@ export default function App() {
           element={
             <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
               <WorkingSchedulesPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/contracts"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <ContractsPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/workforce/contracts"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <ContractsPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/notifications"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <NotificationsPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/notifications/activity"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <NotificationsPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/activity"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <NotificationsPage />
             </AppLayout>
           }
         />
