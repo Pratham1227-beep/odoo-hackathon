@@ -1,0 +1,480 @@
+erDiagram
+
+    ORGANIZATION {
+        ObjectId _id PK
+        String name
+        String code UK
+        String email
+        String phone
+        String currency
+        String timezone
+        String country
+        String address
+        String logoUrl
+        String status
+        Date createdAt
+        Date updatedAt
+    }
+
+    USER {
+        ObjectId _id PK
+        ObjectId organization FK
+        String email UK
+        String password
+        String role
+        String status
+        Number tokenVersion
+        Date lastLogin
+        Date createdAt
+        Date updatedAt
+    }
+
+    EMPLOYEE_PROFILE {
+        ObjectId _id PK
+        ObjectId user FK
+        ObjectId organization FK
+        ObjectId department FK
+        ObjectId designation FK
+        ObjectId manager FK
+        String employeeId
+        String firstName
+        String lastName
+        String phone
+        String personalEmail
+        Date dateOfBirth
+        Date joiningDate
+        String employmentType
+        String profileImageUrl
+        String address
+        String panNumber
+        String aadhaarNumber
+        String status
+        Date createdAt
+        Date updatedAt
+    }
+
+    DEPARTMENT {
+        ObjectId _id PK
+        ObjectId organization FK
+        String name
+        String code
+        ObjectId manager FK
+        Boolean isActive
+        Date createdAt
+        Date updatedAt
+    }
+
+    DESIGNATION {
+        ObjectId _id PK
+        ObjectId organization FK
+        String title
+        String code
+        String description
+        Boolean isActive
+        Date createdAt
+        Date updatedAt
+    }
+
+    BANK_ACCOUNT {
+        ObjectId _id PK
+        ObjectId employee FK
+        String accountHolderName
+        String bankName
+        String accountNumber
+        String ifscCode
+        String branchName
+        Boolean isPrimary
+        Boolean isVerified
+        Date createdAt
+        Date updatedAt
+    }
+
+    WORKING_SCHEDULE {
+        ObjectId _id PK
+        ObjectId organization FK
+        String name
+        Number hoursPerDay
+        Number hoursPerWeek
+        String workingDays
+        String startTime
+        String endTime
+        Number breakMinutes
+        Boolean isActive
+        Date createdAt
+        Date updatedAt
+    }
+
+    CONTRACT {
+        ObjectId _id PK
+        ObjectId employee FK
+        ObjectId workingSchedule FK
+        ObjectId salaryStructure FK
+        String contractNumber
+        String contractType
+        Date startDate
+        Date endDate
+        Decimal128 baseWage
+        String wageType
+        String status
+        Date createdAt
+        Date updatedAt
+    }
+
+    ATTENDANCE {
+        ObjectId _id PK
+        ObjectId employee FK
+        Date date
+        Date clockIn
+        Date clockOut
+        Number workHours
+        Number overtimeHours
+        String status
+        String source
+        ObjectId updatedBy FK
+        Date createdAt
+        Date updatedAt
+    }
+
+    ATTENDANCE_CORRECTION {
+        ObjectId _id PK
+        ObjectId attendance FK
+        ObjectId requestedBy FK
+        Date requestedClockIn
+        Date requestedClockOut
+        String reason
+        String status
+        ObjectId reviewedBy FK
+        String reviewComment
+        Date reviewedAt
+        Date createdAt
+        Date updatedAt
+    }
+
+    HOLIDAY {
+        ObjectId _id PK
+        ObjectId organization FK
+        String name
+        Date date
+        String type
+        String description
+        Boolean isPaid
+        Date createdAt
+        Date updatedAt
+    }
+
+    LEAVE_TYPE {
+        ObjectId _id PK
+        ObjectId organization FK
+        String name
+        String code
+        String description
+        Number defaultDays
+        Boolean isPaid
+        Boolean carryForward
+        Number maxCarryForward
+        Boolean requiresApproval
+        Boolean isActive
+        Date createdAt
+        Date updatedAt
+    }
+
+    LEAVE_ALLOCATION {
+        ObjectId _id PK
+        ObjectId employee FK
+        ObjectId leaveType FK
+        Number year
+        Number allocatedDays
+        Number usedDays
+        Number remainingDays
+        ObjectId allocatedBy FK
+        Date createdAt
+        Date updatedAt
+    }
+
+    LEAVE_REQUEST {
+        ObjectId _id PK
+        ObjectId employee FK
+        ObjectId leaveType FK
+        Date startDate
+        Date endDate
+        Number days
+        String reason
+        String status
+        ObjectId reviewedBy FK
+        String reviewComment
+        Date reviewedAt
+        Date createdAt
+        Date updatedAt
+    }
+
+    SALARY_STRUCTURE {
+        ObjectId _id PK
+        ObjectId organization FK
+        String name
+        String code
+        String description
+        Boolean isDefault
+        Boolean isActive
+        Date createdAt
+        Date updatedAt
+    }
+
+    SALARY_RULE {
+        ObjectId _id PK
+        ObjectId organization FK
+        String name
+        String code
+        String category
+        String calculationType
+        Decimal128 fixedAmount
+        Number percentage
+        String percentageBase
+        String formula
+        Number sequence
+        Boolean taxable
+        Boolean isStatutory
+        Boolean isActive
+        Date createdAt
+        Date updatedAt
+    }
+
+    SALARY_STRUCTURE_RULE {
+        ObjectId _id PK
+        ObjectId salaryStructure FK
+        ObjectId salaryRule FK
+        Number sequence
+        Boolean isActive
+        Date createdAt
+        Date updatedAt
+    }
+
+    EMPLOYEE_SALARY_COMPONENT {
+        ObjectId _id PK
+        ObjectId employee FK
+        ObjectId salaryRule FK
+        Decimal128 value
+        String valueType
+        Date effectiveFrom
+        Date effectiveTo
+        Boolean isActive
+        Date createdAt
+        Date updatedAt
+    }
+
+    PAYRUN {
+        ObjectId _id PK
+        ObjectId organization FK
+        String name
+        Date periodStart
+        Date periodEnd
+        Number month
+        Number year
+        String status
+        Number totalEmployees
+        Number processedEmployees
+        Number issueCount
+        Decimal128 totalGross
+        Decimal128 totalDeductions
+        Decimal128 totalNet
+        ObjectId createdBy FK
+        ObjectId finalizedBy FK
+        Date computedAt
+        Date finalizedAt
+        String notes
+        Date createdAt
+        Date updatedAt
+    }
+
+    PAYRUN_EMPLOYEE {
+        ObjectId _id PK
+        ObjectId payrun FK
+        ObjectId employee FK
+        ObjectId contract FK
+        String status
+        Number payableDays
+        Number workedDays
+        Number leaveDays
+        Number absentDays
+        Number overtimeHours
+        Decimal128 grossSalary
+        Decimal128 totalDeductions
+        Decimal128 netSalary
+        Boolean isReady
+        Date computedAt
+        Date createdAt
+        Date updatedAt
+    }
+
+    PAYROLL_VALIDATION_ISSUE {
+        ObjectId _id PK
+        ObjectId payrun FK
+        ObjectId employee FK
+        String issueCode
+        String category
+        String severity
+        String title
+        String description
+        String status
+        String resolution
+        ObjectId resolvedBy FK
+        Date resolvedAt
+        Date createdAt
+        Date updatedAt
+    }
+
+    PAYSLIP {
+        ObjectId _id PK
+        ObjectId payrun FK
+        ObjectId employee FK
+        ObjectId contract FK
+        String payslipNumber
+        Date periodStart
+        Date periodEnd
+        Decimal128 basicSalary
+        Decimal128 grossSalary
+        Decimal128 totalEarnings
+        Decimal128 totalDeductions
+        Decimal128 netSalary
+        String status
+        String pdfUrl
+        Date generatedAt
+        Date sentAt
+        Date paidAt
+        Date createdAt
+        Date updatedAt
+    }
+
+    PAYSLIP_LINE {
+        ObjectId _id PK
+        ObjectId payslip FK
+        ObjectId salaryRule FK
+        String name
+        String code
+        String category
+        Decimal128 baseAmount
+        Number rate
+        Decimal128 amount
+        Number sequence
+        Date createdAt
+    }
+
+    PAYSLIP_DELIVERY {
+        ObjectId _id PK
+        ObjectId payslip FK
+        String recipientEmail
+        String deliveryType
+        String status
+        Date sentAt
+        String failureReason
+        Date createdAt
+        Date updatedAt
+    }
+
+    NOTIFICATION {
+        ObjectId _id PK
+        ObjectId recipient FK
+        String title
+        String message
+        String type
+        String severity
+        Boolean isRead
+        String link
+        Date readAt
+        Date createdAt
+        Date updatedAt
+    }
+
+    AUDIT_LOG {
+        ObjectId _id PK
+        ObjectId organization FK
+        ObjectId user FK
+        String action
+        String module
+        String resourceType
+        ObjectId resourceId
+        String before
+        String after
+        String ipAddress
+        String userAgent
+        Date createdAt
+    }
+
+    SYSTEM_CONFIG {
+        ObjectId _id PK
+        ObjectId organization FK
+        String key
+        String value
+        String category
+        String description
+        ObjectId updatedBy FK
+        Date createdAt
+        Date updatedAt
+    }
+
+    ANALYTICS_SNAPSHOT {
+        ObjectId _id PK
+        ObjectId organization FK
+        String type
+        Date date
+        String data
+        String metadata
+        Date createdAt
+        Date updatedAt
+    }
+
+
+    ORGANIZATION ||--o{ USER : contains
+    ORGANIZATION ||--o{ EMPLOYEE_PROFILE : employs
+    ORGANIZATION ||--o{ DEPARTMENT : defines
+    ORGANIZATION ||--o{ DESIGNATION : defines
+    ORGANIZATION ||--o{ WORKING_SCHEDULE : defines
+    ORGANIZATION ||--o{ LEAVE_TYPE : configures
+    ORGANIZATION ||--o{ SALARY_STRUCTURE : configures
+    ORGANIZATION ||--o{ SALARY_RULE : defines
+    ORGANIZATION ||--o{ PAYRUN : processes
+    ORGANIZATION ||--o{ HOLIDAY : defines
+    ORGANIZATION ||--o{ SYSTEM_CONFIG : configures
+    ORGANIZATION ||--o{ ANALYTICS_SNAPSHOT : owns
+    ORGANIZATION ||--o{ AUDIT_LOG : records
+
+    USER ||--o| EMPLOYEE_PROFILE : has
+    EMPLOYEE_PROFILE ||--o{ EMPLOYEE_PROFILE : manages
+    DEPARTMENT ||--o{ EMPLOYEE_PROFILE : contains
+    DESIGNATION ||--o{ EMPLOYEE_PROFILE : assigns
+    EMPLOYEE_PROFILE ||--o{ BANK_ACCOUNT : owns
+
+    EMPLOYEE_PROFILE ||--o{ CONTRACT : has
+    WORKING_SCHEDULE ||--o{ CONTRACT : uses
+    SALARY_STRUCTURE ||--o{ CONTRACT : applies
+
+    EMPLOYEE_PROFILE ||--o{ ATTENDANCE : records
+    ATTENDANCE ||--o{ ATTENDANCE_CORRECTION : corrections
+
+    EMPLOYEE_PROFILE ||--o{ LEAVE_ALLOCATION : receives
+    LEAVE_TYPE ||--o{ LEAVE_ALLOCATION : allocates
+
+    EMPLOYEE_PROFILE ||--o{ LEAVE_REQUEST : requests
+    LEAVE_TYPE ||--o{ LEAVE_REQUEST : classifies
+
+    SALARY_STRUCTURE ||--o{ SALARY_STRUCTURE_RULE : contains
+    SALARY_RULE ||--o{ SALARY_STRUCTURE_RULE : included_in
+    EMPLOYEE_PROFILE ||--o{ EMPLOYEE_SALARY_COMPONENT : receives
+    SALARY_RULE ||--o{ EMPLOYEE_SALARY_COMPONENT : overrides
+
+    PAYRUN ||--o{ PAYRUN_EMPLOYEE : contains
+    EMPLOYEE_PROFILE ||--o{ PAYRUN_EMPLOYEE : processed
+    CONTRACT ||--o{ PAYRUN_EMPLOYEE : payroll_context
+
+    PAYRUN ||--o{ PAYROLL_VALIDATION_ISSUE : detects
+    EMPLOYEE_PROFILE ||--o{ PAYROLL_VALIDATION_ISSUE : affected_by
+
+    PAYRUN ||--o{ PAYSLIP : generates
+    EMPLOYEE_PROFILE ||--o{ PAYSLIP : receives
+    CONTRACT ||--o{ PAYSLIP : calculated_under
+
+    PAYSLIP ||--o{ PAYSLIP_LINE : contains
+    SALARY_RULE ||--o{ PAYSLIP_LINE : calculates
+    PAYSLIP ||--o{ PAYSLIP_DELIVERY : delivered_as
+
+    USER ||--o{ NOTIFICATION : receives
+    USER ||--o{ AUDIT_LOG : performs
