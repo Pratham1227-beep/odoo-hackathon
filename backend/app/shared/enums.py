@@ -140,4 +140,41 @@ class LeaveRequestStatus(str, Enum):
 LeaveStatus = LeaveRequestStatus
 
 
+class PayrunStatus(str, Enum):
+    DRAFT = "DRAFT"
+    PROCESSING = "PROCESSING"
+    PROCESSED = "PROCESSED"
+    FINALIZED = "FINALIZED"
+
+
+class PayrunEmployeeStatus(str, Enum):
+    PENDING = "PENDING"
+    COMPUTED = "COMPUTED"
+    ISSUE = "ISSUE"
+
+
+class PayrollIssueSeverity(str, Enum):
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+
+
+class PayrollIssueStatus(str, Enum):
+    OPEN = "OPEN"
+    RESOLVED = "RESOLVED"
+    IGNORED = "IGNORED"
+
+
+class PayslipStatus(str, Enum):
+    GENERATED = "GENERATED"
+    PAID = "PAID"
+
+
+class DeliveryStatus(str, Enum):
+    PENDING = "PENDING"
+    SENT = "SENT"
+    FAILED = "FAILED"
+
+
+
 

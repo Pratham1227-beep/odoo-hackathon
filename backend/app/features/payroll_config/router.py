@@ -148,7 +148,7 @@ async def create_salary_rule(
     db: AsyncSession = Depends(get_db),
 ):
     return await SalaryRuleService.create_rule(
-        db, current_user.organization_id, payload
+        db, current_user.organization_id, payload, current_user=current_user
     )
 
 
@@ -179,8 +179,9 @@ async def update_salary_rule(
     db: AsyncSession = Depends(get_db),
 ):
     return await SalaryRuleService.update_rule(
-        db, current_user.organization_id, rule_id, payload
+        db, current_user.organization_id, rule_id, payload, current_user=current_user
     )
+
 
 
 # ==========================================

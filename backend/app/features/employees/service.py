@@ -407,6 +407,7 @@ class EmployeeService:
         org_id: uuid.UUID,
         employee_id: uuid.UUID,
         payload: EmployeeUpdate,
+        current_user: Optional[User] = None,
     ) -> Dict[str, Any]:
         stmt = select(Employee).where(
             Employee.id == employee_id,
@@ -416,6 +417,7 @@ class EmployeeService:
         if not emp:
             raise NotFoundError("Employee record not found")
 
+        old_status = emp.status.value if hasattr(emp.status, "value") else str(emp.status)
         update_data = payload.model_dump(exclude_unset=True)
 
         # Check unique email update
@@ -473,8 +475,24 @@ class EmployeeService:
         for k, v in update_data.items():
             setattr(emp, k, v)
 
+        new_status = emp.status.value if hasattr(emp.status, "value") else str(emp.status)
+        if old_status != new_status or "status" in update_data:
+            from app.core.audit import log_audit
+            await log_audit(
+                db=db,
+                user=current_user,
+                action="UPDATE",
+                module="EMPLOYEES",
+                resource_type="EmployeeProfile",
+                resource_id=emp.id,
+                before={"status": old_status},
+                after={"status": new_status},
+                org_id=org_id,
+            )
+
         await db.commit()
         return await EmployeeService.get_employee_by_id(db, org_id, employee_id)
+
 
     # ==========================================
     # Delete / Terminate Employee

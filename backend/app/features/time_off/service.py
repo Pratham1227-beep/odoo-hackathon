@@ -423,4 +423,29 @@ class TimeOffService:
             raise BadRequestError("Review status must be either APPROVED or REJECTED")
 
         saved = await LeaveRequestRepository.save(db, leave_req)
+
+        # Notify employee of decision
+        emp_user_id = saved.employee.user_id if saved.employee else None
+        if not emp_user_id:
+            emp_chk = await db.get(Employee, saved.employee_id)
+            if emp_chk:
+                emp_user_id = emp_chk.user_id
+
+        if emp_user_id:
+            from app.features.notifications.service import NotificationService
+            notif_type = "LEAVE_APPROVED" if saved.status == LeaveRequestStatus.APPROVED else "LEAVE_REJECTED"
+            action_str = "approved" if saved.status == LeaveRequestStatus.APPROVED else "rejected"
+            comment_str = f" Comment: {payload.review_comment}" if payload.review_comment else ""
+            await NotificationService.create_notification(
+                db=db,
+                recipient_id=emp_user_id,
+                title=f"Leave request {action_str}",
+                message=f"Your leave request from {saved.start_date} to {saved.end_date} has been {action_str}.{comment_str}",
+                type=notif_type,
+                severity="INFO",
+                link=f"/time-off/requests/{saved.id}",
+                organization_id=saved.organization_id,
+            )
+
         return cls._to_request_response(saved)
+

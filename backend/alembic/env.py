@@ -30,6 +30,20 @@ from app.features.time_off.models import (  # noqa: F401
     LeaveRequest,
     LeaveType,
 )
+from app.features.payroll.models import (  # noqa: F401
+    PayrollValidationIssue,
+    Payrun,
+    PayrunEmployee,
+    Payslip,
+    PayslipDelivery,
+    PayslipLine,
+)
+from app.core.audit import AuditLog  # noqa: F401
+from app.features.notifications.models import Notification  # noqa: F401
+from app.features.reports_dashboard.models import AnalyticsSnapshot  # noqa: F401
+
+
+
 
 
 

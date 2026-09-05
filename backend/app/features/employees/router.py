@@ -157,8 +157,9 @@ async def update_employee(
     db: AsyncSession = Depends(get_db),
 ):
     return await EmployeeService.update_employee(
-        db, current_user.organization_id, employee_id, payload
+        db, current_user.organization_id, employee_id, payload, current_user=current_user
     )
+
 
 
 @router.delete(
