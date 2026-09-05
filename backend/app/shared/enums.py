@@ -7,6 +7,7 @@ class UserRole(str, Enum):
     HR_PAYROLL_USER = "HR_PAYROLL_USER"
     HR_PAYROLL_MANAGER = "HR_PAYROLL_MANAGER"
     ADMIN = "ADMIN"
+    INTERN = "INTERN"
 
 
 class UserStatus(str, Enum):
@@ -174,6 +175,43 @@ class DeliveryStatus(str, Enum):
     PENDING = "PENDING"
     SENT = "SENT"
     FAILED = "FAILED"
+
+
+# ==========================================
+# Intern Module Enums
+# ==========================================
+
+class InternshipStatus(str, Enum):
+    UPCOMING = "UPCOMING"
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    EXTENDED = "EXTENDED"
+    TERMINATED = "TERMINATED"
+
+
+class InternshipType(str, Enum):
+    PAID = "PAID"
+    UNPAID = "UNPAID"
+    STIPEND = "STIPEND"
+
+
+class ConversionStatus(str, Enum):
+    NOT_REVIEWED = "NOT_REVIEWED"
+    RECOMMENDED = "RECOMMENDED"
+    CONVERTED = "CONVERTED"
+    NOT_CONVERTED = "NOT_CONVERTED"
+
+
+class GoalStatus(str, Enum):
+    TODO = "TODO"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+
+
+class ReviewType(str, Enum):
+    MID_TERM = "MID_TERM"
+    FINAL = "FINAL"
+
 
 
 

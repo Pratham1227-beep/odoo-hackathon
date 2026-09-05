@@ -67,10 +67,12 @@ def import_all_models() -> None:
     import app.features.payroll.models  # noqa: F401
     import app.features.reports_dashboard.models  # noqa: F401
     import app.features.notifications.models  # noqa: F401
+    import app.features.interns.models  # noqa: F401
     import app.core.audit  # noqa: F401
 
 # Register all models on module load
 import_all_models()
+
 
 
 async def init_db() -> None:
