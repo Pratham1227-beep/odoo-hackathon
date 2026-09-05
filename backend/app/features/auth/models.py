@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from typing import List, Optional
 import uuid
 from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Integer, String
@@ -30,6 +30,30 @@ class Organization(BaseModel):
     # Relationships
     users: Mapped[List["User"]] = relationship(
         "User",
+        back_populates="organization",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    work_locations: Mapped[List["WorkLocation"]] = relationship(  # noqa: F821
+        "WorkLocation",
+        back_populates="organization",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    departments: Mapped[List["Department"]] = relationship(  # noqa: F821
+        "Department",
+        back_populates="organization",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    designations: Mapped[List["Designation"]] = relationship(  # noqa: F821
+        "Designation",
+        back_populates="organization",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    employees: Mapped[List["Employee"]] = relationship(  # noqa: F821
+        "Employee",
         back_populates="organization",
         cascade="all, delete-orphan",
         lazy="selectin",
@@ -84,5 +108,11 @@ class User(BaseModel):
     organization: Mapped["Organization"] = relationship(
         "Organization",
         back_populates="users",
+        lazy="joined",
+    )
+    employee: Mapped[Optional["Employee"]] = relationship(  # noqa: F821
+        "Employee",
+        back_populates="user",
+        uselist=False,
         lazy="joined",
     )
