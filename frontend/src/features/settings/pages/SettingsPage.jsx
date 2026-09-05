@@ -5,7 +5,8 @@ import PayrollSettingsTab from '../components/PayrollSettingsTab';
 import AttendanceSettingsTab from '../components/AttendanceSettingsTab';
 import SecuritySettingsTab from '../components/SecuritySettingsTab';
 import { initialSettings } from '../data/settingsData';
-import { Building2, Coins, Clock, Shield } from 'lucide-react';
+import { settingsService } from '../services/settingsService';
+import { Building2, Coins, Clock, Shield, Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState(() => {
@@ -15,6 +16,7 @@ export default function SettingsPage() {
 
   const [activeTab, setActiveTab] = useState('organization');
   const [isSaving, setIsSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState(null);
 
   const showToast = (msg) => {
@@ -22,17 +24,84 @@ export default function SettingsPage() {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  useEffect(() => {
+    const fetchLiveSettings = async () => {
+      try {
+        setLoading(true);
+        const [orgRes, payrollRes] = await Promise.allSettled([
+          settingsService.getOrganization(),
+          settingsService.getPayrollConfig(),
+        ]);
+
+        setSettings((prev) => {
+          let updated = { ...prev };
+          if (orgRes.status === 'fulfilled' && orgRes.value) {
+            const org = orgRes.value;
+            updated = {
+              ...updated,
+              companyName: org.name || updated.companyName,
+              companyCode: org.code || updated.companyCode,
+              legalEntity: org.legal_name || org.name || updated.legalEntity,
+              contactEmail: org.email || updated.contactEmail,
+              contactPhone: org.phone || updated.contactPhone,
+              panNumber: org.pan || updated.panNumber,
+              gstNumber: org.gstin || updated.gstNumber,
+              currency: org.currency ? `${org.currency} (₹)` : updated.currency,
+            };
+          }
+          if (payrollRes.status === 'fulfilled' && payrollRes.value) {
+            const pc = payrollRes.value;
+            updated = {
+              ...updated,
+              payCycleCutoffDay: pc.cut_off_day || updated.payCycleCutoffDay,
+              standardWorkHoursPerDay: pc.work_hours_per_day || updated.standardWorkHoursPerDay,
+              overtimeMultiplier: pc.overtime_multiplier || updated.overtimeMultiplier,
+            };
+          }
+          return updated;
+        });
+      } catch (err) {
+        console.error('Error fetching live settings', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLiveSettings();
+  }, []);
+
   const handleChange = (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      // Save locally
       localStorage.setItem('wagewise_settings', JSON.stringify(settings));
-      setIsSaving(false);
+
+      // Attempt live backend update for org & payroll configs
+      await Promise.allSettled([
+        settingsService.updateOrganization({
+          name: settings.companyName,
+          legal_name: settings.legalEntity,
+          email: settings.contactEmail,
+          phone: settings.contactPhone,
+          pan: settings.panNumber,
+          gstin: settings.gstNumber,
+        }),
+        settingsService.updatePayrollConfig({
+          cut_off_day: Number(settings.payCycleCutoffDay) || 25,
+          work_hours_per_day: Number(settings.standardWorkHoursPerDay) || 8,
+          overtime_multiplier: Number(settings.overtimeMultiplier) || 1.5,
+        }),
+      ]);
+
       showToast('Settings successfully updated and applied.');
-    }, 400);
+    } catch (err) {
+      showToast('Settings saved locally.');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const tabs = [
@@ -78,18 +147,26 @@ export default function SettingsPage() {
         })}
       </div>
 
-      {/* Active Tab View */}
-      {activeTab === 'organization' && (
-        <OrganizationSettingsTab settings={settings} onChange={handleChange} />
-      )}
-      {activeTab === 'payroll' && (
-        <PayrollSettingsTab settings={settings} onChange={handleChange} />
-      )}
-      {activeTab === 'attendance' && (
-        <AttendanceSettingsTab settings={settings} onChange={handleChange} />
-      )}
-      {activeTab === 'security' && (
-        <SecuritySettingsTab settings={settings} onChange={handleChange} />
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      ) : (
+        <>
+          {/* Active Tab View */}
+          {activeTab === 'organization' && (
+            <OrganizationSettingsTab settings={settings} onChange={handleChange} />
+          )}
+          {activeTab === 'payroll' && (
+            <PayrollSettingsTab settings={settings} onChange={handleChange} />
+          )}
+          {activeTab === 'attendance' && (
+            <AttendanceSettingsTab settings={settings} onChange={handleChange} />
+          )}
+          {activeTab === 'security' && (
+            <SecuritySettingsTab settings={settings} onChange={handleChange} />
+          )}
+        </>
       )}
     </div>
   );

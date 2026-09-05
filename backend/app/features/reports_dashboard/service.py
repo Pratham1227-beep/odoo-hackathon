@@ -348,14 +348,25 @@ class ReportsDashboardService:
         today = datetime.now(timezone.utc).date()
 
         att_query = (
-            select(Attendance)
+            select(
+                Attendance.id,
+                Attendance.status,
+                Attendance.work_hours,
+                Attendance.overtime_hours,
+                Attendance.clock_in,
+                Attendance.clock_out,
+                Attendance.date,
+                Attendance.source,
+                Employee.department_id,
+                Department.name.label("department_name"),
+            )
             .join(Employee, Attendance.employee_id == Employee.id)
+            .outerjoin(Department, Employee.department_id == Department.id)
             .where(
                 Attendance.organization_id == org_id,
                 Attendance.date >= period.from_date,
                 Attendance.date <= period.to_date,
             )
-            .options(selectinload(Attendance.employee).selectinload(Employee.department))
         )
         if department_id:
             att_query = att_query.where(Employee.department_id == department_id)
@@ -363,13 +374,28 @@ class ReportsDashboardService:
             att_query = att_query.where(Employee.employment_type == employment_type)
 
         res = await db.execute(att_query)
-        records = res.scalars().all()
+        records = res.all()
 
         total_records = len(records)
         present_count = sum(1 for r in records if r.status == AttendanceStatus.PRESENT)
         late_count = sum(1 for r in records if r.status == AttendanceStatus.LATE)
         absent_count = sum(1 for r in records if r.status == AttendanceStatus.ABSENT)
         half_day_count = sum(1 for r in records if r.status == AttendanceStatus.HALF_DAY)
+
+        # Calculate daily present/absent for today (or latest recorded workday)
+        today_records = [r for r in records if r.date == today]
+        if not today_records and records:
+            latest_date = max(r.date for r in records)
+            today_records = [r for r in records if r.date == latest_date]
+
+        present_today_count = sum(
+            1 for r in today_records 
+            if r.status in [AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.HALF_DAY]
+        )
+        absent_today_count = sum(
+            1 for r in today_records 
+            if r.status == AttendanceStatus.ABSENT
+        )
 
         total_work_hours = round(sum(float(r.work_hours or 0.0) for r in records), 2)
         total_overtime_hours = round(sum(float(r.overtime_hours or 0.0) for r in records), 2)
@@ -380,7 +406,7 @@ class ReportsDashboardService:
         )
 
         # Manual edit count: source == MANUAL
-        manual_edit_count = sum(1 for r in records if r.source.value == "MANUAL")
+        manual_edit_count = sum(1 for r in records if r.source and r.source.value == "MANUAL")
 
         coverage_num = present_count + late_count + half_day_count
         attendance_coverage_percentage = (
@@ -390,8 +416,8 @@ class ReportsDashboardService:
         # Department breakdown
         dept_map: Dict[Optional[uuid.UUID], Dict[str, Any]] = {}
         for r in records:
-            d_id = r.employee.department_id if r.employee else None
-            d_name = r.employee.department.name if r.employee and r.employee.department else "Unassigned"
+            d_id = r.department_id
+            d_name = r.department_name or "Unassigned"
             if d_id not in dept_map:
                 dept_map[d_id] = {
                     "department_id": d_id,
@@ -446,6 +472,8 @@ class ReportsDashboardService:
             late_count=late_count,
             absent_count=absent_count,
             half_day_count=half_day_count,
+            present_today_count=present_today_count,
+            absent_today_count=absent_today_count,
             total_work_hours=total_work_hours,
             total_overtime_hours=total_overtime_hours,
             missing_checkout_count=missing_checkout_count,
@@ -453,6 +481,7 @@ class ReportsDashboardService:
             attendance_coverage_percentage=attendance_coverage_percentage,
             department_breakdown=dept_metrics,
         )
+
 
     # ==========================================
     # 4. Employees Dashboard

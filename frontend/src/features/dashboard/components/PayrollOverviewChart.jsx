@@ -5,8 +5,16 @@ export default function PayrollOverviewChart({ data = [] }) {
   const [selectedRange, setSelectedRange] = useState('Last 6 Months');
   const [hoveredBar, setHoveredBar] = useState(null);
 
-  const maxY = 20; // in Lakhs
-  const yTicks = [20, 15, 10, 5, 0];
+  const maxVal = Math.max(...data.map((d) => d.amount || 0), 1);
+  const maxY = Math.ceil(maxVal * 1.25) || 20; // in Lakhs
+  const step = maxY / 4;
+  const yTicks = [
+    Math.round(maxY),
+    Math.round(step * 3),
+    Math.round(step * 2),
+    Math.round(step * 1),
+    0
+  ];
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800/80 shadow-xs flex flex-col justify-between h-full">

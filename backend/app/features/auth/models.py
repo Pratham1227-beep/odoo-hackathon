@@ -6,6 +6,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.shared.base_model import BaseModel, GUID
 from app.shared.enums import OrganizationStatus, UserRole, UserStatus
+from app.features.organization.models import Department, Designation, WorkLocation
+from app.features.employees.models import Employee
 
 
 class Organization(BaseModel):
@@ -32,32 +34,33 @@ class Organization(BaseModel):
         "User",
         back_populates="organization",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
     work_locations: Mapped[List["WorkLocation"]] = relationship(  # noqa: F821
         "WorkLocation",
         back_populates="organization",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
     departments: Mapped[List["Department"]] = relationship(  # noqa: F821
         "Department",
         back_populates="organization",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
     designations: Mapped[List["Designation"]] = relationship(  # noqa: F821
         "Designation",
         back_populates="organization",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
     employees: Mapped[List["Employee"]] = relationship(  # noqa: F821
         "Employee",
         back_populates="organization",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
+
 
 
 class User(BaseModel):

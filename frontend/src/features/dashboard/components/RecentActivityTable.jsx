@@ -34,41 +34,49 @@ export default function RecentActivityTable({ activities = [] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50 text-xs">
-            {activities.map((item) => {
-              const badgeStyle =
-                statusBadgeStyles[item.statusVariant] || statusBadgeStyles.info;
+            {activities.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="py-6 text-center text-slate-400 dark:text-slate-500 font-medium">
+                  No recent activities found
+                </td>
+              </tr>
+            ) : (
+              activities.map((item) => {
+                const badgeStyle =
+                  statusBadgeStyles[item.statusVariant] || statusBadgeStyles.info;
 
-              return (
-                <tr
-                  key={item.id}
-                  className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
-                >
-                  {/* Date */}
-                  <td className="py-3.5 text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
-                    {item.date}
-                  </td>
+                return (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors"
+                  >
+                    {/* Date */}
+                    <td className="py-3.5 text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap">
+                      {item.date}
+                    </td>
 
-                  {/* Activity */}
-                  <td className="py-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
-                    {item.activity}
-                  </td>
+                    {/* Activity */}
+                    <td className="py-3.5 font-bold text-slate-900 dark:text-white whitespace-nowrap">
+                      {item.activity}
+                    </td>
 
-                  {/* Details */}
-                  <td className="py-3.5 text-slate-600 dark:text-slate-300">
-                    {item.details}
-                  </td>
+                    {/* Details */}
+                    <td className="py-3.5 text-slate-600 dark:text-slate-300">
+                      {item.details}
+                    </td>
 
-                  {/* Status Badge */}
-                  <td className="py-3.5 text-right whitespace-nowrap">
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold border ${badgeStyle}`}
-                    >
-                      {item.status}
-                    </span>
-                  </td>
-                </tr>
-              );
-            })}
+                    {/* Status Badge */}
+                    <td className="py-3.5 text-right whitespace-nowrap">
+                      <span
+                        className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold border ${badgeStyle}`}
+                      >
+                        {item.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>

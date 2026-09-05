@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Search,
   Bell,
@@ -12,11 +12,34 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
+import { notificationService } from '../../features/notifications/services/notificationService';
 
 export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const navigate = useNavigate();
   const { user, organization, logout } = useAuthStore();
+
+  useEffect(() => {
+    let isMounted = true;
+    const checkUnread = async () => {
+      try {
+        const res = await notificationService.listNotifications({ is_read: false, page_size: 10 });
+        if (isMounted && res) {
+          const count = res.total !== undefined ? res.total : (res.items?.length || 0);
+          setUnreadCount(count);
+        }
+      } catch (err) {
+        // quiet fallback
+      }
+    };
+    checkUnread();
+    const interval = setInterval(checkUnread, 30000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -30,7 +53,7 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
       <div className="flex items-center gap-3 flex-1 max-w-xl">
         <button
           onClick={onOpenSidebar}
-          className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden focus:outline-none"
+          className="p-2 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden focus:outline-none cursor-pointer"
           aria-label="Open sidebar"
         >
           <Menu className="w-5 h-5" />
@@ -43,7 +66,7 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
           <input
             type="text"
             placeholder="Search employees, payroll, reports..."
-            className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 dark:focus:border-indigo-400 transition-all"
+            className="w-full pl-11 pr-4 py-2.5 text-sm bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-slate-900 dark:white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 dark:focus:border-indigo-400 transition-all"
           />
         </div>
       </div>
@@ -55,8 +78,7 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
         <button
           onClick={toggleDarkMode}
           aria-label="Toggle dark mode"
-          className="p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer
-          "
+          className="p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
         >
           {isDarkMode ? (
             <Sun className="w-5 h-5 text-amber-400" />
@@ -73,7 +95,9 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
         >
           <Bell className="w-5 h-5" />
           {/* Unread Red Dot */}
-          <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+          {unreadCount > 0 && (
+            <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900" />
+          )}
         </button>
 
         {/* User Profile Pill */}
@@ -82,7 +106,7 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className="flex items-center gap-3 p-1.5 sm:px-3 sm:py-1.5 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors cursor-pointer focus:outline-none"
           >
-            {/* Avatar with 'A' */}
+            {/* Avatar with initial */}
             <div className="w-9 h-9 rounded-full bg-indigo-600 text-white font-bold text-sm flex items-center justify-center shadow-xs shadow-indigo-500/25 shrink-0">
               {user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>
@@ -102,7 +126,7 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
 
           {/* Profile Dropdown Menu */}
           {showProfileMenu && (
-            <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 sm:hidden">
                 <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user?.email || 'User'}</p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{organization?.name || 'Organization'}</p>

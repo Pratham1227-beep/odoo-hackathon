@@ -455,16 +455,16 @@ export const upcomingContractExpirations = [
 ];
 
 // Dynamic derived statistics helper
-export function computeContractStats(contractsList) {
-  // Baseline scaling numbers to match the organization dataset of 118 employees
-  const totalEmployeesWithContracts = 118;
-  const activeCount = 102;
-  const expiringSoonCount = 12;
-  const expiredCount = 4;
+export function computeContractStats(contractsList = [], totalCount = null) {
+  const totalEmployeesWithContracts = totalCount !== null ? totalCount : contractsList.length;
+  const activeCount = contractsList.filter((c) => c.status === 'Active').length;
+  const expiringSoonCount = contractsList.filter((c) => c.status === 'Expiring Soon').length;
+  const expiredCount = contractsList.filter((c) => c.status === 'Expired').length;
 
-  const activePct = ((activeCount / totalEmployeesWithContracts) * 100).toFixed(1);
-  const expiringPct = ((expiringSoonCount / totalEmployeesWithContracts) * 100).toFixed(1);
-  const expiredPct = ((expiredCount / totalEmployeesWithContracts) * 100).toFixed(1);
+  const totalSafe = Math.max(1, totalEmployeesWithContracts);
+  const activePct = ((activeCount / totalSafe) * 100).toFixed(1);
+  const expiringPct = ((expiringSoonCount / totalSafe) * 100).toFixed(1);
+  const expiredPct = ((expiredCount / totalSafe) * 100).toFixed(1);
 
   return [
     {

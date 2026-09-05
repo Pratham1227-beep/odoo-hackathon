@@ -29,10 +29,14 @@ export default function ChangePasswordPage({ isDarkMode }) {
 
     try {
       setLoading(true);
-      await authService.changePassword({
+      const result = await authService.changePassword({
         current_password: currentPassword,
         new_password: newPassword
       });
+      // Backend returns fresh tokens after bumping token_version
+      if (result?.tokens) {
+        setTokens(result.tokens.access_token, result.tokens.refresh_token);
+      }
       // Refresh user profile so must_change_password becomes false
       await fetchMe();
       navigate('/dashboard');

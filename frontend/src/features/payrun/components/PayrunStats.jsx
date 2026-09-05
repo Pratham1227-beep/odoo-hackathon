@@ -2,9 +2,9 @@ import React from 'react';
 import { Users, Check, Clock } from 'lucide-react';
 
 export default function PayrunStats({
-  totalEmployees = 118,
-  processedEmployees = 112,
-  pendingEmployees = 6,
+  totalEmployees = 0,
+  processedEmployees = 0,
+  pendingEmployees = 0,
 }) {
   const processedPercent =
     totalEmployees > 0

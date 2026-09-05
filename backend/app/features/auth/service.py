@@ -273,7 +273,7 @@ class AuthService:
         user.must_change_password = False
         await self.db.commit()
 
-    async def change_password(self, user: User, req: ChangePasswordRequest) -> None:
+    async def change_password(self, user: User, req: ChangePasswordRequest) -> TokenResponse:
         """Authenticated password change: verifies current password, updates hash, bumps token_version."""
         if not verify_password(req.current_password, user.password_hash):
             raise ValidationError("Current password does not match")
@@ -282,3 +282,8 @@ class AuthService:
         user.token_version += 1
         user.must_change_password = False
         await self.db.commit()
+        await self.db.refresh(user)
+
+        # Return fresh tokens with the new token_version so the caller stays authenticated
+        return self._generate_tokens(user, user.organization_id)
+

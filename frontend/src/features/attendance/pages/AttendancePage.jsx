@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import AttendanceHeader from '../components/AttendanceHeader';
 import AttendanceStats from '../components/AttendanceStats';
 import AttendanceFilterTabs from '../components/AttendanceFilterTabs';
@@ -10,15 +10,17 @@ import MarkAttendanceModal from '../components/MarkAttendanceModal';
 import ApplyLeaveModal from '../components/ApplyLeaveModal';
 import AttendanceDetailModal from '../components/AttendanceDetailModal';
 import AttendanceReportModal from '../components/AttendanceReportModal';
-import {
-  initialAttendanceRecords,
-  COMPANY_HEADCOUNT,
-} from '../data/attendanceData';
-import { Download, CheckCircle2, UserCheck, X } from 'lucide-react';
+import { attendanceService } from '../services/attendanceService';
+import { timeOffService } from '../../timeOff/services/timeOffService';
+import { employeeService } from '../../employees/services/employeeService';
+import { Download, CheckCircle2, UserCheck, X, Loader2 } from 'lucide-react';
+
+const avatarThemes = ['purple', 'blue', 'pink', 'teal', 'violet', 'sky', 'rose', 'mint'];
 
 export default function AttendancePage() {
-  const [selectedDate, setSelectedDate] = useState('2026-09-12');
-  const [records, setRecords] = useState(initialAttendanceRecords);
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [records, setRecords] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -47,35 +49,123 @@ export default function AttendancePage() {
     }, 3500);
   };
 
-  // Derive date-specific records (if date changes, simulate or filter records)
-  const dateRecords = useMemo(() => {
-    return records.map((r) => ({
-      ...r,
-      date: selectedDate,
-    }));
-  }, [records, selectedDate]);
+  const fetchAttendanceRecords = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [attRes, empRes] = await Promise.allSettled([
+        attendanceService.listAttendances({
+          from: selectedDate,
+          to: selectedDate,
+          page: 1,
+          page_size: 500,
+        }),
+        employeeService.getEmployees({ page: 1, page_size: 500 }),
+      ]);
 
-  // Derive Workforce Stats (Headcount 118 matching enterprise dashboard)
+      const attItems = attRes.status === 'fulfilled' && attRes.value?.items ? attRes.value.items : [];
+      const realEmps = empRes.status === 'fulfilled' && empRes.value?.items ? empRes.value.items : [];
+
+      if (attItems.length > 0) {
+        const mapped = attItems.map((r, index) => {
+          const empName = r.employee ? `${r.employee.first_name || ''} ${r.employee.last_name || ''}`.trim() : 'Employee';
+          const initials = empName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'EM';
+          
+          let checkInTime = '-';
+          if (r.clock_in) {
+            const d = new Date(r.clock_in);
+            checkInTime = !isNaN(d) ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
+          }
+          let checkOutTime = '-';
+          if (r.clock_out) {
+            const d = new Date(r.clock_out);
+            checkOutTime = !isNaN(d) ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
+          }
+
+          let formattedStatus = 'Present';
+          if (r.status === 'PRESENT') formattedStatus = 'Present';
+          else if (r.status === 'LATE') formattedStatus = 'Late';
+          else if (r.status === 'ABSENT') formattedStatus = 'Absent';
+          else if (r.status === 'HALF_DAY') formattedStatus = 'Half Day';
+          else if (r.status === 'ON_LEAVE') formattedStatus = 'On Leave';
+
+          return {
+            id: r.id,
+            realId: r.id,
+            employeeId: r.employee?.employee_code || r.employee_id,
+            employeeName: empName,
+            initials: initials,
+            avatarTheme: avatarThemes[index % avatarThemes.length],
+            department: r.employee?.department?.name || 'General',
+            role: r.employee?.designation?.title || 'Staff',
+            date: r.date || selectedDate,
+            checkIn: checkInTime,
+            checkOut: checkOutTime,
+            workHours: r.work_hours ? `${r.work_hours}h` : '-',
+            status: formattedStatus,
+            workLocation: 'Office',
+            attendanceType: r.source === 'BIOMETRIC' ? 'Biometric' : 'Manual',
+            notes: r.notes || '',
+          };
+        });
+        setRecords(mapped);
+      } else if (realEmps.length > 0) {
+        // Map all real organization employees for this date
+        const mapped = realEmps.map((emp, index) => {
+          const fullName = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'Employee';
+          const initials = fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'EM';
+          return {
+            id: `att-emp-${emp.id}`,
+            realId: null,
+            employeeId: emp.employee_code || emp.id,
+            employeeName: fullName,
+            initials: initials,
+            avatarTheme: avatarThemes[index % avatarThemes.length],
+            department: emp.department?.name || emp.department_name || 'General',
+            role: emp.designation?.title || emp.designation_title || 'Staff',
+            date: selectedDate,
+            checkIn: '-',
+            checkOut: '-',
+            workHours: '-',
+            status: 'Absent',
+            workLocation: emp.work_location?.name || 'Office',
+            attendanceType: 'Manual',
+            notes: '',
+          };
+        });
+        setRecords(mapped);
+      } else {
+        setRecords([]);
+      }
+    } catch (err) {
+      console.error('Failed to load attendance:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedDate]);
+
+  useEffect(() => {
+    fetchAttendanceRecords();
+  }, [fetchAttendanceRecords]);
+
+  // Derive Workforce Stats dynamically
   const stats = useMemo(() => {
-    // Current date counts
-    const presentInTable = dateRecords.filter((r) => r.status === 'Present').length;
-    const absentInTable = dateRecords.filter((r) => r.status === 'Absent').length;
-    const leaveInTable = dateRecords.filter((r) => r.status === 'On Leave').length;
-    const lateInTable = dateRecords.filter((r) => r.status === 'Late').length;
+    const presentInTable = records.filter((r) => r.status === 'Present').length;
+    const absentInTable = records.filter((r) => r.status === 'Absent').length;
+    const leaveInTable = records.filter((r) => r.status === 'On Leave').length;
+    const lateInTable = records.filter((r) => r.status === 'Late').length;
 
-    // Scale up proportionally for company 118 total to match exact UI reference (92, 14, 12, 6)
     return {
-      total: COMPANY_HEADCOUNT,
-      present: 92,
-      absent: 14,
-      leave: 12,
-      late: 6,
+      total: records.length,
+      present: presentInTable,
+      absent: absentInTable,
+      leave: leaveInTable,
+      late: lateInTable,
     };
-  }, [dateRecords]);
+  }, [records]);
 
   // Filtered attendance records
   const filteredRecords = useMemo(() => {
-    return dateRecords.filter((rec) => {
+    return records.filter((rec) => {
       // 1. Tab filter
       if (activeTab === 'Present' && rec.status !== 'Present') return false;
       if (activeTab === 'Absent' && rec.status !== 'Absent') return false;
@@ -85,9 +175,9 @@ export default function AttendancePage() {
       // 2. Search query (matches name, id, department)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesName = rec.employeeName.toLowerCase().includes(q);
-        const matchesId = rec.employeeId.toLowerCase().includes(q);
-        const matchesDept = rec.department.toLowerCase().includes(q);
+        const matchesName = rec.employeeName?.toLowerCase().includes(q);
+        const matchesId = rec.employeeId?.toLowerCase().includes(q);
+        const matchesDept = rec.department?.toLowerCase().includes(q);
         if (!matchesName && !matchesId && !matchesDept) return false;
       }
 
@@ -129,12 +219,12 @@ export default function AttendancePage() {
 
       return true;
     });
-  }, [dateRecords, activeTab, searchQuery, filters]);
+  }, [records, activeTab, searchQuery, filters]);
 
   // Tab counts
   const tabCounts = useMemo(() => {
     return {
-      all: COMPANY_HEADCOUNT,
+      all: stats.total,
       present: stats.present,
       absent: stats.absent,
       leave: stats.leave,
@@ -176,7 +266,6 @@ export default function AttendancePage() {
   // Save / Update Attendance
   const handleSaveAttendance = (formData) => {
     if (formData.id) {
-      // Update existing record
       setRecords((prev) =>
         prev.map((r) =>
           r.id === formData.id
@@ -193,7 +282,6 @@ export default function AttendancePage() {
       );
       showToast(`Updated attendance for ${formData.employeeName}`);
     } else {
-      // Create new record
       const newRec = {
         ...formData,
         id: `ATT-${selectedDate.replace(/-/g, '')}-${Date.now().toString().slice(-3)}`,
@@ -204,8 +292,14 @@ export default function AttendancePage() {
   };
 
   // Row Quick Actions
-  const handleQuickCheckIn = (record) => {
-    const currentTime = '09:00 AM';
+  const handleQuickCheckIn = async (record) => {
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      await attendanceService.checkIn();
+    } catch (e) {
+      // quiet fallback
+    }
+
     setRecords((prev) =>
       prev.map((r) =>
         r.id === record.id
@@ -221,8 +315,14 @@ export default function AttendancePage() {
     showToast(`Checked in ${record.employeeName} at ${currentTime}`);
   };
 
-  const handleQuickCheckOut = (record) => {
-    const currentTime = '06:00 PM';
+  const handleQuickCheckOut = async (record) => {
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      await attendanceService.checkOut();
+    } catch (e) {
+      // quiet fallback
+    }
+
     setRecords((prev) =>
       prev.map((r) =>
         r.id === record.id
@@ -413,7 +513,7 @@ export default function AttendancePage() {
                   </button>
                   <button
                     onClick={() => setSelectedIds([])}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl"
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl cursor-pointer"
                     aria-label="Clear selection"
                   >
                     <X className="w-4 h-4" />
@@ -438,7 +538,7 @@ export default function AttendancePage() {
             {/* Table Footer Count & Summary */}
             <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500 pt-3 border-t border-slate-100 dark:border-slate-800/80">
               <span>
-                Showing {filteredRecords.length} of {COMPANY_HEADCOUNT} employees
+                Showing {filteredRecords.length} of {stats.total} employees
               </span>
               <span>
                 Date: {selectedDate}

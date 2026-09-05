@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -7,7 +7,8 @@ import {
   Send,
   Sparkles,
   Info,
-  X
+  X,
+  Loader2,
 } from 'lucide-react';
 
 import PayrunHeader from '../components/PayrunHeader';
@@ -22,8 +23,10 @@ import PayslipModal from '../components/PayslipModal';
 import PayrollPreviewModal from '../components/PayrollPreviewModal';
 import WarningsDrawer from '../components/WarningsDrawer';
 
+import { payrunService } from '../services/payrunService';
+import { employeeService } from '../../employees/services/employeeService';
+import { payrollConfigService } from '../../salarySetup/services/payrollConfigService';
 import {
-  initialEmployees,
   initialPayrunPeriods,
   initialSalaryStructures,
   initialRecentPayruns,
@@ -36,10 +39,12 @@ export default function PayrunPage() {
 
   // State
   const [selectedPeriod, setSelectedPeriod] = useState('September 2026');
-  const [employees, setEmployees] = useState(initialEmployees);
+  const [employees, setEmployees] = useState([]);
   const [recentPayruns, setRecentPayruns] = useState(initialRecentPayruns);
+  const [structures, setStructures] = useState(initialSalaryStructures);
   const [stages, setStages] = useState(initialStages);
   const [currentStageNumber, setCurrentStageNumber] = useState(5);
+  const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
 
   // Table selection & filtering state
@@ -63,6 +68,77 @@ export default function PayrunPage() {
       setToastMessage(null);
     }, 4000);
   };
+
+  const fetchPayrunData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [payrunsRes, empRes, structRes] = await Promise.allSettled([
+        payrunService.listPayruns({ page: 1, page_size: 20 }),
+        employeeService.getEmployees({ page: 1, page_size: 50 }),
+        payrollConfigService.listStructures(),
+      ]);
+
+      if (payrunsRes.status === 'fulfilled' && payrunsRes.value?.items) {
+        const mappedRuns = payrunsRes.value.items.map((r) => ({
+          id: r.id,
+          realId: r.id,
+          period: r.name || `${r.month}/${r.year}`,
+          processedDate: r.finalized_at ? new Date(r.finalized_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Draft',
+          totalPayoutFormatted: `₹${(Number(r.total_net_salary || 0) / 100000).toFixed(2)}L`,
+          totalPayout: Number(r.total_net_salary || 0),
+          employeesProcessed: r.total_employees || 0,
+          status: r.status === 'PAID' ? 'Finalized' : r.status === 'CALCULATED' ? 'Ready' : 'Draft',
+        }));
+        if (mappedRuns.length > 0) {
+          setRecentPayruns(mappedRuns);
+        }
+      }
+
+      if (structRes.status === 'fulfilled' && Array.isArray(structRes.value) && structRes.value.length > 0) {
+        setStructures(structRes.value);
+      }
+
+      if (empRes.status === 'fulfilled' && empRes.value?.items) {
+        const mappedEmps = empRes.value.items.map((emp) => {
+          const fullName = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'Employee';
+          const initials = fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'EM';
+          const gross = Number(emp.base_salary || 65000);
+          const breakdown = calculateSalaryBreakdown(gross, 'standard');
+
+          return {
+            id: emp.employee_code || emp.id,
+            realId: emp.id,
+            name: fullName,
+            email: emp.email,
+            department: emp.department_name || 'General',
+            role: emp.designation_title || 'Staff',
+            grossSalary: gross,
+            deductions: breakdown.deductions,
+            netPay: breakdown.netPay,
+            status: 'Processed',
+            salaryStructureId: 'standard',
+            avatarTheme: 'purple',
+            initials: initials,
+            warnings: [],
+            bankDetails: {
+              accountNumber: '987654321098',
+              ifsc: 'HDFC0001234',
+              verified: true,
+            },
+          };
+        });
+        setEmployees(mappedEmps);
+      }
+    } catch (err) {
+      console.error('Failed to load payrun data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPayrunData();
+  }, [fetchPayrunData]);
 
   // Departments list for filter
   const departments = useMemo(() => {

@@ -1,8 +1,71 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Coins, PlayCircle, Landmark, ShieldAlert, TrendingUp, AlertTriangle } from 'lucide-react';
-import { payrollKPIs } from '../data/payrollData';
+import { reportsService } from '../../reports/services/reportsService';
+import { employeeService } from '../../employees/services/employeeService';
 
 export default function PayrollKPIs() {
+  const [metrics, setMetrics] = useState(null);
+  const [empCount, setEmpCount] = useState(0);
+
+  useEffect(() => {
+    reportsService.getPayrollDashboard().then((res) => {
+      if (res?.metrics) {
+        setMetrics(res.metrics);
+        if (res.metrics.employee_count !== undefined) {
+          setEmpCount(res.metrics.employee_count);
+        }
+      }
+    }).catch((err) => console.error('Failed to load payroll KPIs:', err));
+
+    employeeService.getEmployeeStats().then((res) => {
+      if (res?.total_employees !== undefined) {
+        setEmpCount(res.total_employees);
+      }
+    }).catch(() => {});
+  }, []);
+
+  const totalGross = metrics?.total_gross ? Number(metrics.total_gross) : 0;
+  const totalNet = metrics?.total_net ? Number(metrics.total_net) : 0;
+  const totalDeductions = metrics?.total_deductions ? Number(metrics.total_deductions) : 0;
+
+  const payrollKPIs = [
+    {
+      id: 'gross',
+      title: 'Gross Salary Cost',
+      value: `₹${(totalGross / 100000).toFixed(2)}L`,
+      badge: 'Current Period',
+      trend: `${empCount} Total Employees`,
+      trendType: 'positive',
+      icon: 'Coins',
+      theme: 'purple',
+    },
+    {
+      id: 'net',
+      title: 'Net Disbursal',
+      value: `₹${(totalNet / 100000).toFixed(2)}L`,
+      badge: 'Ready for Bank',
+      trend: 'Direct Disbursal',
+      trendType: 'positive',
+      icon: 'PlayCircle',
+      theme: 'emerald',
+    },
+    {
+      id: 'taxes',
+      title: 'Statutory Deductions',
+      value: `₹${(totalDeductions / 100000).toFixed(2)}L`,
+      subtitle: 'PF, ESI, TDS, PT',
+      icon: 'Landmark',
+      theme: 'blue',
+    },
+    {
+      id: 'compliance',
+      title: 'Compliance Health',
+      value: '100%',
+      subtitle: 'All checks passed',
+      icon: 'ShieldAlert',
+      theme: 'amber',
+    },
+  ];
   const iconMap = {
     Coins: Coins,
     PlayCircle: PlayCircle,

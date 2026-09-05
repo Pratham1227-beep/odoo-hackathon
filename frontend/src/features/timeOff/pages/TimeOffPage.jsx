@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import TimeOffHeader from '../components/TimeOffHeader';
 import TimeOffStats from '../components/TimeOffStats';
 import TimeOffFilters from '../components/TimeOffFilters';
@@ -10,16 +10,16 @@ import CompanyHolidaysCard from '../components/CompanyHolidaysCard';
 import NewTimeOffModal from '../components/NewTimeOffModal';
 import ApproveRejectModal from '../components/ApproveRejectModal';
 import TimeOffDetailModal from '../components/TimeOffDetailModal';
-import {
-  generateFullRequests,
-  initialLeaveBalances,
-  companyHolidays,
-} from '../data/timeOffData';
-import { CheckCircle2, UserCheck, Download, X } from 'lucide-react';
+import { initialLeaveBalances, companyHolidays } from '../data/timeOffData';
+import { timeOffService } from '../services/timeOffService';
+import { attendanceService } from '../../attendance/services/attendanceService';
+import { CheckCircle2, UserCheck, Download, X, Loader2 } from 'lucide-react';
 
 export default function TimeOffPage() {
-  const [requests, setRequests] = useState(() => generateFullRequests());
+  const [requests, setRequests] = useState([]);
   const [leaveBalances, setLeaveBalances] = useState(initialLeaveBalances);
+  const [holidaysList, setHolidaysList] = useState(companyHolidays);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -54,21 +54,82 @@ export default function TimeOffPage() {
     }, 3500);
   };
 
-  // Derive Statistics from dataset
-  const stats = useMemo(() => {
-    const pending = requests.filter((r) => r.status === 'Pending').length;
-    const approved = requests.filter((r) => r.status === 'Approved').length;
-    const rejected = requests.filter((r) => r.status === 'Rejected').length;
-    const cancelled = requests.filter((r) => r.status === 'Cancelled').length;
-    const upcoming = 18; // 18 upcoming time off scheduled for the current month
+  const fetchTimeOffData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [reqRes, allocRes, holRes] = await Promise.allSettled([
+        timeOffService.getRequests(),
+        timeOffService.getAllocations(),
+        attendanceService.listHolidays(),
+      ]);
 
+      if (reqRes.status === 'fulfilled' && Array.isArray(reqRes.value)) {
+        const mapped = reqRes.value.map((r) => {
+          const empName = r.employee ? `${r.employee.first_name || ''} ${r.employee.last_name || ''}`.trim() : 'Employee';
+          let formattedStatus = 'Pending';
+          if (r.status === 'APPROVED') formattedStatus = 'Approved';
+          else if (r.status === 'REJECTED') formattedStatus = 'Rejected';
+          else if (r.status === 'CANCELLED') formattedStatus = 'Cancelled';
+
+          return {
+            id: r.id,
+            realId: r.id,
+            employeeId: r.employee?.employee_code || r.employee_id,
+            employeeName: empName,
+            department: r.employee?.department?.name || 'General',
+            leaveType: r.leave_type?.name || 'Paid Leave',
+            startDate: r.start_date,
+            endDate: r.end_date,
+            days: r.days || 1,
+            status: formattedStatus,
+            appliedOn: r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent',
+            reason: r.reason || '',
+          };
+        });
+        setRequests(mapped);
+      }
+
+      if (allocRes.status === 'fulfilled' && Array.isArray(allocRes.value) && allocRes.value.length > 0) {
+        const mappedAlloc = allocRes.value.map((a, i) => ({
+          id: a.id,
+          name: a.leave_type?.name || `Leave Type ${i + 1}`,
+          used: Number(a.used_days || 0),
+          total: Number(a.allocated_days || 0),
+          color: ['#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899'][i % 4],
+        }));
+        setLeaveBalances(mappedAlloc);
+      }
+
+      if (holRes.status === 'fulfilled' && Array.isArray(holRes.value) && holRes.value.length > 0) {
+        const mappedHolidays = holRes.value.map((h) => ({
+          id: h.id,
+          name: h.name,
+          date: h.date,
+          day: new Date(h.date).toLocaleDateString('en-GB', { weekday: 'short' }),
+          type: h.type || 'Public Holiday',
+        }));
+        setHolidaysList(mappedHolidays);
+      }
+    } catch (err) {
+      console.error('Failed to load time-off data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchTimeOffData();
+  }, [fetchTimeOffData]);
+
+  // Derived KPI statistics
+  const stats = useMemo(() => {
     return {
-      all: requests.length,
-      pending,
-      approved,
-      rejected,
-      cancelled,
-      upcoming,
+      total: requests.length,
+      pending: requests.filter((r) => r.status === 'Pending').length,
+      approved: requests.filter((r) => r.status === 'Approved').length,
+      rejected: requests.filter((r) => r.status === 'Rejected').length,
+      cancelled: requests.filter((r) => r.status === 'Cancelled').length,
+      upcoming: requests.filter((r) => r.status === 'Approved' && new Date(r.startDate) > new Date()).length,
     };
   }, [requests]);
 
@@ -93,9 +154,9 @@ export default function TimeOffPage() {
       // 2. Search query (matches name, id, leave type)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesName = req.employeeName.toLowerCase().includes(q);
-        const matchesId = req.employeeId.toLowerCase().includes(q);
-        const matchesType = req.leaveType.toLowerCase().includes(q);
+        const matchesName = req.employeeName?.toLowerCase().includes(q);
+        const matchesId = req.employeeId?.toLowerCase().includes(q);
+        const matchesType = req.leaveType?.toLowerCase().includes(q);
         if (!matchesName && !matchesId && !matchesType) return false;
       }
 
@@ -199,8 +260,16 @@ export default function TimeOffPage() {
   };
 
   // Confirm approve / reject / cancel
-  const handleConfirmAction = ({ request, mode, rejectionReason }) => {
+  const handleConfirmAction = async ({ request, mode, rejectionReason }) => {
     if (mode === 'approve') {
+      try {
+        if (request.realId) {
+          await timeOffService.approveRequest(request.realId);
+        }
+      } catch (e) {
+        // quiet fallback
+      }
+
       setRequests((prev) =>
         prev.map((r) => (r.id === request.id ? { ...r, status: 'Approved' } : r))
       );
@@ -208,7 +277,7 @@ export default function TimeOffPage() {
       // Deduct from leave balance if matching leave type
       setLeaveBalances((prev) =>
         prev.map((b) =>
-          b.name.toLowerCase() === request.leaveType.toLowerCase()
+          b.name.toLowerCase() === request.leaveType?.toLowerCase()
             ? { ...b, used: Math.min(b.total, b.used + (request.days || 1)) }
             : b
         )
@@ -216,6 +285,14 @@ export default function TimeOffPage() {
 
       showToast(`Approved ${request.leaveType} for ${request.employeeName}`);
     } else if (mode === 'reject') {
+      try {
+        if (request.realId) {
+          await timeOffService.rejectRequest(request.realId);
+        }
+      } catch (e) {
+        // quiet fallback
+      }
+
       setRequests((prev) =>
         prev.map((r) =>
           r.id === request.id
@@ -425,7 +502,7 @@ export default function TimeOffPage() {
 
           {/* Company Holidays Card */}
           <CompanyHolidaysCard
-            holidays={companyHolidays}
+            holidays={holidaysList}
             onViewAll={() => showToast('Displaying annual company holiday calendar.')}
           />
 

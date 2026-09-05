@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, AlertTriangle, XCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, XCircle, Info, X, Loader2 } from 'lucide-react';
 
 import PayrunBreadcrumbs from '../components/PayrunBreadcrumbs';
 import PayrunProcessingHeader from '../components/PayrunProcessingHeader';
@@ -18,6 +18,8 @@ import {
   initialPayrunPeriods,
   evaluateValidationResults,
 } from '../data/payrunData';
+import { reportsService } from '../../reports/services/reportsService';
+import { employeeService } from '../../employees/services/employeeService';
 
 export default function PayrunProcessingPage() {
   const navigate = useNavigate();
@@ -25,7 +27,7 @@ export default function PayrunProcessingPage() {
   // State
   const [selectedPeriod, setSelectedPeriod] = useState('September 2026 (Monthly)');
   const [issues, setIssues] = useState(initialValidationIssues);
-  const [totalEmployees] = useState(118);
+  const [totalEmployees, setTotalEmployees] = useState(0);
   const [stages, setStages] = useState(initialValidationStepStages);
   const [currentStep, setCurrentStep] = useState(2);
   const [isRevalidating, setIsRevalidating] = useState(false);
@@ -46,6 +48,45 @@ export default function PayrunProcessingPage() {
       setToastMessage(null);
     }, 4000);
   };
+
+  useEffect(() => {
+    const fetchLiveValidationData = async () => {
+      try {
+        const [dashRes, empRes, statsRes] = await Promise.allSettled([
+          reportsService.getMainDashboard(),
+          employeeService.getEmployees({ page: 1, page_size: 100 }),
+          employeeService.getEmployeeStats(),
+        ]);
+
+        if (statsRes.status === 'fulfilled' && statsRes.value?.total_employees !== undefined) {
+          setTotalEmployees(statsRes.value.total_employees);
+        } else if (empRes.status === 'fulfilled' && empRes.value?.total !== undefined) {
+          setTotalEmployees(empRes.value.total);
+        } else if (empRes.status === 'fulfilled' && Array.isArray(empRes.value?.items)) {
+          setTotalEmployees(empRes.value.items.length);
+        }
+
+        if (dashRes.status === 'fulfilled' && dashRes.value?.operational_alerts?.issues?.length > 0) {
+          const liveIssues = dashRes.value.operational_alerts.issues.map((iss) => ({
+            id: iss.id.slice(0, 8),
+            employeeId: iss.employee_code || 'EMP001',
+            employeeName: iss.employee_name || 'Staff Member',
+            department: 'Technology',
+            issueType: iss.category || iss.title,
+            details: iss.description,
+            severity: iss.severity?.toLowerCase() === 'error' ? 'error' : 'warning',
+            suggestedAction: 'Review and update employee profile details.',
+            currentValue: 'Missing',
+            resolvedValue: 'Valid',
+          }));
+          setIssues(liveIssues);
+        }
+      } catch (err) {
+        console.error('Failed to load validation issues:', err);
+      }
+    };
+    fetchLiveValidationData();
+  }, []);
 
   // Evaluate validation engine results dynamically
   const validationResults = useMemo(() => {
@@ -148,7 +189,6 @@ export default function PayrunProcessingPage() {
       return;
     }
 
-    // Advance to Step 3: Review & Adjust or navigate to payrun
     showToast('Payroll validated! Proceeding to Step 3: Review & Adjust.');
     setCurrentStep(3);
     setStages((prev) =>

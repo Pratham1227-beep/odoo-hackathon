@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Home,
@@ -13,7 +13,7 @@ import {
   Download,
   UserX,
   Sparkles,
-  Check
+  Loader2,
 } from 'lucide-react';
 import EmployeeProfileHeader from '../components/EmployeeProfileHeader';
 import EmployeeTabs from '../components/EmployeeTabs';
@@ -27,46 +27,76 @@ import RecentActivityTimeline from '../components/RecentActivityTimeline';
 import EmployeeDocumentsCard from '../components/EmployeeDocumentsCard';
 import AddEmployeeModal from '../components/AddEmployeeModal';
 import { defaultEmployeeProfile } from '../data/employeeProfileData';
-import { initialEmployees } from '../data/employeesData';
+import { employeeService } from '../services/employeeService';
 
 export default function EmployeeProfilePage() {
   const { employeeId } = useParams();
   const navigate = useNavigate();
 
-  // Load employee details
-  const [profile, setProfile] = useState(() => {
-    const matched = initialEmployees.find((e) => e.id === employeeId);
-    if (matched) {
-      return {
-        ...defaultEmployeeProfile,
-        id: matched.id,
-        name: matched.name,
-        email: matched.email,
-        department: matched.department,
-        designation: matched.role,
-        status: matched.status,
-        personalInformation: {
-          ...defaultEmployeeProfile.personalInformation,
-          fullName: matched.name,
-          email: matched.email,
-          phone: matched.phone || defaultEmployeeProfile.phone,
-        },
-        workInformation: {
-          ...defaultEmployeeProfile.workInformation,
-          employeeId: matched.id,
-          department: matched.department,
-          designation: matched.role,
-          joinDate: matched.joinDate,
-        },
-      };
-    }
-    return defaultEmployeeProfile;
-  });
-
+  const [profile, setProfile] = useState(defaultEmployeeProfile);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('Overview');
   const [showMoreActions, setShowMoreActions] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const moreActionsRef = useRef(null);
+
+  const fetchProfile = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      let data = null;
+      if (employeeId === 'me') {
+        data = await employeeService.getMyProfile();
+      } else {
+        // Try getting by UUID or search
+        data = await employeeService.getEmployeeById(employeeId);
+      }
+
+      if (data) {
+        const fullName = `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Employee';
+        const formatted = {
+          ...defaultEmployeeProfile,
+          id: data.employee_code || data.id,
+          realId: data.id,
+          name: fullName,
+          email: data.email,
+          phone: data.phone || defaultEmployeeProfile.phone,
+          department: data.department_name || 'Unassigned',
+          designation: data.designation_title || 'Staff',
+          status: data.status === 'ACTIVE' ? 'Active' : data.status === 'ON_LEAVE' ? 'On Leave' : 'Inactive',
+          personalInformation: {
+            ...defaultEmployeeProfile.personalInformation,
+            fullName: fullName,
+            email: data.email,
+            phone: data.phone || 'Not provided',
+            gender: data.gender || 'Not specified',
+            maritalStatus: data.marital_status || 'Not specified',
+          },
+          workInformation: {
+            ...defaultEmployeeProfile.workInformation,
+            employeeId: data.employee_code || data.id,
+            department: data.department_name || 'Unassigned',
+            designation: data.designation_title || 'Staff',
+            workLocation: data.work_location_name || 'Main Office',
+            employmentType: data.employment_type === 'FULL_TIME' ? 'Full-Time' : 'Part-Time',
+            joinDate: data.joining_date ? new Date(data.joining_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent',
+          },
+          salary: {
+            ...defaultEmployeeProfile.salary,
+            baseSalary: data.base_salary ? `₹${Number(data.base_salary).toLocaleString('en-IN')}` : defaultEmployeeProfile.salary.baseSalary,
+          },
+        };
+        setProfile(formatted);
+      }
+    } catch (err) {
+      console.error('Failed to load profile:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [employeeId]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -85,41 +115,37 @@ export default function EmployeeProfilePage() {
 
   const handleMoreAction = (action) => {
     setShowMoreActions(false);
-    if (action === 'contract') navigate(`/payroll?employee=${profile.id}`);
+    if (action === 'contract') navigate(`/contracts?employee=${profile.id}`);
     else if (action === 'attendance') navigate(`/attendance?employee=${profile.id}`);
-    else if (action === 'leave') navigate(`/leave-management?employee=${profile.id}`);
-    else if (action === 'payslips') navigate(`/payroll?employee=${profile.id}`);
-    else if (action === 'download') alert(`Downloading full HR profile package for ${profile.name}...`);
+    else if (action === 'leave') navigate(`/leave-request?employee=${profile.id}`);
+    else if (action === 'payslips') navigate(`/payroll/payslips?employee=${profile.id}`);
+    else if (action === 'download') alert(`Downloading profile summary for ${profile.name}...`);
     else if (action === 'deactivate') {
       if (confirm(`Are you sure you want to deactivate ${profile.name}?`)) {
-        setProfile((prev) => ({ ...prev, status: 'Inactive' }));
+        if (profile.realId) {
+          employeeService.deleteEmployee(profile.realId, false).then(() => {
+            setProfile((prev) => ({ ...prev, status: 'Inactive' }));
+          });
+        }
       }
     }
   };
 
-  const handleSaveProfile = (formData) => {
-    setProfile((prev) => ({
-      ...prev,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone || prev.phone,
-      department: formData.department,
-      designation: formData.role,
-      status: formData.status,
-      personalInformation: {
-        ...prev.personalInformation,
-        fullName: formData.name,
-        email: formData.email,
-        phone: formData.phone || prev.personalInformation.phone,
-      },
-      workInformation: {
-        ...prev.workInformation,
-        department: formData.department,
-        designation: formData.role,
-        employmentType: formData.employmentType,
-        joinDate: formData.joinDate,
-      },
-    }));
+  const handleSaveProfile = async (formData) => {
+    if (profile.realId) {
+      try {
+        const names = (formData.name || '').trim().split(' ');
+        await employeeService.updateEmployee(profile.realId, {
+          first_name: names[0] || '',
+          last_name: names.slice(1).join(' ') || '',
+          phone: formData.phone || null,
+        });
+        alert('Profile updated successfully!');
+        fetchProfile();
+      } catch (err) {
+        alert('Failed to update: ' + (err.response?.data?.error?.message || err.message));
+      }
+    }
   };
 
   return (

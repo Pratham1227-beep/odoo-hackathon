@@ -14,8 +14,13 @@ export default function LoginPage({ isDarkMode, toggleDarkMode }) {
   const handleLoginSubmit = async (credentials) => {
     try {
       setApiError(null);
-      await login(credentials);
-      navigate('/dashboard');
+      const data = await login(credentials);
+      // If the user has a temporary password, redirect to change-password page
+      if (data?.user?.must_change_password) {
+        navigate('/change-password');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       const errorMessage = err.response?.data?.error?.message || err.response?.data?.detail || 'Failed to login. Please check your credentials.';
       setApiError(errorMessage);

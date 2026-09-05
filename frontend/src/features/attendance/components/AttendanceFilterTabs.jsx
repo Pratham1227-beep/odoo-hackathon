@@ -10,7 +10,7 @@ import {
 export default function AttendanceFilterTabs({
   activeTab = 'All',
   onTabChange,
-  counts = { all: 118, present: 92, absent: 14, leave: 12, late: 6 },
+  counts = { all: 0, present: 0, absent: 0, leave: 0, late: 0 },
   searchQuery = '',
   onSearchChange,
   filters = {},

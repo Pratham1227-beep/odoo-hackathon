@@ -22,6 +22,7 @@ router = APIRouter(prefix="/reports-dashboard", tags=["Reports & Dashboard"])
 
 # Role groupings
 PAYROLL_DASHBOARD_ROLES = [
+    UserRole.HR_MANAGER,
     UserRole.HR_PAYROLL_USER,
     UserRole.HR_PAYROLL_MANAGER,
     UserRole.ADMIN,

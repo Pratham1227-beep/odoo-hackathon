@@ -31,7 +31,7 @@ class WorkLocation(OrgScopedModel):
     employees: Mapped[List["Employee"]] = relationship(  # noqa: F821
         "Employee",
         back_populates="work_location",
-        lazy="selectin",
+        lazy="select",
     )
 
 
@@ -74,7 +74,7 @@ class Department(OrgScopedModel):
     sub_departments: Mapped[List["Department"]] = relationship(
         "Department",
         back_populates="parent_department",
-        lazy="selectin",
+        lazy="select",
     )
     manager: Mapped[Optional["Employee"]] = relationship(  # noqa: F821
         "Employee",
@@ -85,13 +85,13 @@ class Department(OrgScopedModel):
     designations: Mapped[List["Designation"]] = relationship(
         "Designation",
         back_populates="department",
-        lazy="selectin",
+        lazy="select",
     )
     employees: Mapped[List["Employee"]] = relationship(  # noqa: F821
         "Employee",
         foreign_keys="Employee.department_id",
         back_populates="department",
-        lazy="selectin",
+        lazy="select",
     )
 
 
@@ -128,5 +128,6 @@ class Designation(OrgScopedModel):
         "Employee",
         foreign_keys="Employee.designation_id",
         back_populates="designation",
-        lazy="selectin",
+        lazy="select",
     )
+

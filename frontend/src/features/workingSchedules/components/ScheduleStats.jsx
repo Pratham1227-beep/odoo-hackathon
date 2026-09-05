@@ -1,19 +1,61 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Users, Calendar, Clock, UserCheck } from 'lucide-react';
-import { scheduleKPIs } from '../data/workingScheduleData';
+import { employeeService } from '../../employees/services/employeeService';
 
-export default function ScheduleStats() {
-  const iconMap = {
-    Users: Users,
-    Calendar: Calendar,
-    Clock: Clock,
-    UserCheck: UserCheck,
-  };
+export default function ScheduleStats({ totalCount }) {
+  const [liveCount, setLiveCount] = useState(totalCount || 0);
+
+  useEffect(() => {
+    if (totalCount !== undefined) {
+      setLiveCount(totalCount);
+    } else {
+      employeeService.getEmployeeStats().then((res) => {
+        if (res?.total_employees !== undefined) {
+          setLiveCount(res.total_employees);
+        }
+      }).catch(() => {});
+    }
+  }, [totalCount]);
+
+  const scheduleKPIs = [
+    {
+      id: 'total-employees',
+      title: 'Total Employees',
+      value: String(liveCount || 0),
+      subtitle: 'Across all schedules',
+      icon: Users,
+      iconBg: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400',
+    },
+    {
+      id: 'active-schedules',
+      title: 'Active Schedules',
+      value: '3',
+      subtitle: 'Currently in use',
+      icon: Calendar,
+      iconBg: 'bg-teal-50 text-teal-600 dark:bg-teal-950/60 dark:text-teal-400',
+    },
+    {
+      id: 'shift-types',
+      title: 'Shift Types',
+      value: '3',
+      subtitle: 'Morning, Evening, Night',
+      icon: Clock,
+      iconBg: 'bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400',
+    },
+    {
+      id: 'rotational-employees',
+      title: 'Rotational Employees',
+      value: String(Math.min(liveCount, 2)),
+      subtitle: 'On Flexible / Rotational Shift',
+      icon: UserCheck,
+      iconBg: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400',
+    },
+  ];
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {scheduleKPIs.map((kpi) => {
-        const IconComponent = iconMap[kpi.icon] || Users;
+        const IconComponent = kpi.icon;
 
         return (
           <div

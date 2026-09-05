@@ -2,10 +2,10 @@ import React from 'react';
 import { Users, Check, AlertTriangle, XCircle, X } from 'lucide-react';
 
 export default function ValidationStats({
-  totalEmployees = 118,
-  validRecords = 112,
-  warningsCount = 4,
-  errorsCount = 2,
+  totalEmployees = 0,
+  validRecords = 0,
+  warningsCount = 0,
+  errorsCount = 0,
 }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

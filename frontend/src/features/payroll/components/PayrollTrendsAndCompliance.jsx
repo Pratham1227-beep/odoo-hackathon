@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   TrendingUp,
   Download,
@@ -15,16 +15,75 @@ import {
   departmentCostBreakdown,
   statutoryComplianceItems,
 } from '../data/payrollData';
+import { reportsService } from '../../reports/services/reportsService';
+import { employeeService } from '../../employees/services/employeeService';
 
 export default function PayrollTrendsAndCompliance() {
   const [downloadSuccess, setDownloadSuccess] = useState(false);
+  const [trends, setTrends] = useState(monthlyDisbursementTrends);
+  const [departments, setDepartments] = useState(departmentCostBreakdown);
+  const [totalPayrollCost, setTotalPayrollCost] = useState('₹0');
+  const [activeEmpCount, setActiveEmpCount] = useState(0);
+
+  useEffect(() => {
+    const fetchLiveTrends = async () => {
+      try {
+        employeeService.getEmployeeStats().then((res) => {
+          if (res?.total_employees !== undefined) {
+            setActiveEmpCount(res.total_employees);
+          }
+        }).catch(() => {});
+        const res = await reportsService.getPayrollDashboard();
+        if (res) {
+          if (res.monthly_trends && res.monthly_trends.length > 0) {
+            const mappedTrends = res.monthly_trends.map((t, idx) => {
+              const dateObj = new Date(t.date);
+              const monthName = dateObj.toLocaleString('en-US', { month: 'short' });
+              return {
+                month: `${monthName} ${t.year || 2026}`,
+                gross: Math.round(Number(t.total_gross || 0) / 100000),
+                net: Math.round(Number(t.total_net || 0) / 100000),
+                current: idx === res.monthly_trends.length - 1,
+              };
+            });
+            setTrends(mappedTrends);
+          }
+
+          if (res.salary_cost_by_department && res.salary_cost_by_department.length > 0) {
+            const colors = ['bg-indigo-600', 'bg-blue-500', 'bg-teal-500', 'bg-purple-500', 'bg-amber-500'];
+            const total = Number(res.metrics?.total_net || 1);
+            const mappedDepts = res.salary_cost_by_department.map((d, idx) => {
+              const cost = Number(d.total_cost || 0);
+              const pct = Math.round((cost / total) * 100) || 0;
+              return {
+                department: d.department_name,
+                count: d.headcount || 0,
+                amountFormatted: `₹${(cost / 100000).toFixed(2)}L`,
+                percentage: Math.min(pct, 100),
+                color: colors[idx % colors.length],
+              };
+            });
+            setDepartments(mappedDepts);
+            setTotalPayrollCost(`₹${(total / 100000).toFixed(2)}L`);
+          }
+
+          if (res.metrics?.employee_count) {
+            setActiveEmpCount(res.metrics.employee_count);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load payroll trends:', err);
+      }
+    };
+    fetchLiveTrends();
+  }, []);
 
   const handleExportCompliance = () => {
     setDownloadSuccess(true);
     setTimeout(() => setDownloadSuccess(false), 2500);
   };
 
-  const maxGross = Math.max(...monthlyDisbursementTrends.map((d) => d.gross));
+  const maxGross = Math.max(...trends.map((d) => d.gross), 1);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
@@ -56,7 +115,7 @@ export default function PayrollTrendsAndCompliance() {
 
           {/* Bar Visualizer */}
           <div className="h-44 flex items-end justify-between gap-2 sm:gap-4 pt-4 border-b border-slate-100 dark:border-slate-800 pb-2">
-            {monthlyDisbursementTrends.map((item) => {
+            {trends.map((item) => {
               const grossHeight = Math.round((item.gross / maxGross) * 100);
               const netHeight = Math.round((item.net / maxGross) * 100);
 
@@ -68,7 +127,7 @@ export default function PayrollTrendsAndCompliance() {
                   <div className="w-full max-w-[48px] flex items-end justify-center gap-1 h-32">
                     {/* Gross Bar */}
                     <div
-                      style={{ height: `${grossHeight}%` }}
+                      style={{ height: `${Math.max(grossHeight, 4)}%` }}
                       className={`w-1/2 rounded-t-md transition-all duration-300 ${
                         item.current
                           ? 'bg-indigo-600 shadow-sm shadow-indigo-600/30'
@@ -78,7 +137,7 @@ export default function PayrollTrendsAndCompliance() {
                     />
                     {/* Net Bar */}
                     <div
-                      style={{ height: `${netHeight}%` }}
+                      style={{ height: `${Math.max(netHeight, 4)}%` }}
                       className={`w-1/2 rounded-t-md transition-all duration-300 ${
                         item.current
                           ? 'bg-emerald-500 shadow-sm shadow-emerald-500/30'
@@ -102,7 +161,7 @@ export default function PayrollTrendsAndCompliance() {
           </div>
 
           <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-3">
-            <span>Current Batch: 118 Employees</span>
+            <span>Current Batch: {activeEmpCount} Employees</span>
             <span className="font-semibold text-emerald-600 dark:text-emerald-400">
               Avg. Net Payout: ₹69,067 / employee
             </span>
@@ -119,12 +178,12 @@ export default function PayrollTrendsAndCompliance() {
               </h3>
             </div>
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Total: ₹91.44L
+              Total: {totalPayrollCost}
             </span>
           </div>
 
           <div className="space-y-3">
-            {departmentCostBreakdown.map((dept) => (
+            {departments.map((dept) => (
               <div key={dept.department} className="space-y-1">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-medium text-slate-700 dark:text-slate-300">

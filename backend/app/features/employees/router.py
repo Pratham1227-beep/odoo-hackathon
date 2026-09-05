@@ -64,7 +64,7 @@ async def get_company_org_chart(
     summary="Get employee headcount metrics, departmental distribution, and new joiners",
 )
 async def get_employee_stats_summary(
-    current_user: User = Depends(require_role(UserRole.ADMIN, UserRole.HR_MANAGER, UserRole.HR_PAYROLL_MANAGER)),
+    current_user: User = Depends(require_role(UserRole.ADMIN, UserRole.HR_MANAGER, UserRole.HR_PAYROLL_MANAGER, UserRole.HR_PAYROLL_USER)),
     db: AsyncSession = Depends(get_db),
 ):
     return await EmployeeService.get_employee_stats(db, current_user.organization_id)

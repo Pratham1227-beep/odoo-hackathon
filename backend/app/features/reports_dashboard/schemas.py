@@ -119,12 +119,15 @@ class AttendanceDashboardResponse(BaseModel):
     late_count: int = 0
     absent_count: int = 0
     half_day_count: int = 0
+    present_today_count: int = 0
+    absent_today_count: int = 0
     total_work_hours: float = 0.0
     total_overtime_hours: float = 0.0
     missing_checkout_count: int = 0
     manual_edit_count: int = 0
     attendance_coverage_percentage: float = 100.0
     department_breakdown: List[DepartmentAttendanceMetric] = Field(default_factory=list)
+
 
 
 # ==========================================

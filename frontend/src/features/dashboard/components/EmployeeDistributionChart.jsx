@@ -1,12 +1,12 @@
 import React from 'react';
 
 export default function EmployeeDistributionChart({ data = [] }) {
-  const totalEmployees = data.reduce((acc, curr) => acc + curr.count, 0) || 118;
+  const totalEmployees = data.reduce((acc, curr) => acc + (curr.count || 0), 0);
 
   // Calculate cumulative strokeDashoffset for SVG donut
   let cumulativePercent = 0;
   const segments = data.map((item) => {
-    const percent = (item.count / totalEmployees) * 100;
+    const percent = totalEmployees > 0 ? (item.count / totalEmployees) * 100 : 0;
     const strokeDasharray = `${percent} ${100 - percent}`;
     const strokeDashoffset = -cumulativePercent;
     cumulativePercent += percent;

@@ -2,7 +2,16 @@ import React from 'react';
 import { workforceMetrics } from '../data/reportsData';
 import { Users, Briefcase, HeartHandshake, UserCheck } from 'lucide-react';
 
-export default function WorkforceReportsView() {
+export default function WorkforceReportsView({ employeesData }) {
+  // Use live headcount distribution by employment type if available
+  const employmentTypes = (employeesData?.by_employment_type && employeesData.by_employment_type.length > 0)
+    ? employeesData.by_employment_type.map((item) => ({
+        type: item.type.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        count: item.count,
+        percentage: Math.round(item.percentage),
+      }))
+    : workforceMetrics.byEmploymentType;
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
       {/* Employment Type Distribution */}
@@ -16,7 +25,7 @@ export default function WorkforceReportsView() {
         </p>
 
         <div className="space-y-4">
-          {workforceMetrics.byEmploymentType.map((item) => (
+          {employmentTypes.map((item) => (
             <div key={item.type} className="space-y-1.5">
               <div className="flex items-center justify-between text-xs font-semibold">
                 <span className="text-slate-800 dark:text-slate-200">
@@ -28,7 +37,7 @@ export default function WorkforceReportsView() {
               </div>
               <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                 <div
-                  style={{ width: `${item.percentage}%` }}
+                  style={{ width: `${Math.min(item.percentage, 100)}%` }}
                   className="h-full bg-indigo-600 rounded-full"
                 />
               </div>
@@ -47,19 +56,19 @@ export default function WorkforceReportsView() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl">
-              <span className="text-2xs font-semibold text-slate-400 uppercase">Average Tenure</span>
+              <span className="text-2xs font-semibold text-slate-400 uppercase">Active Headcount</span>
               <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">
-                {workforceMetrics.averageTenure}
+                {employeesData?.active_employees || 48}
               </p>
               <p className="text-2xs text-emerald-600 mt-1">High Stability</p>
             </div>
 
             <div className="bg-slate-50 dark:bg-slate-800/60 p-4 rounded-xl">
-              <span className="text-2xs font-semibold text-slate-400 uppercase">Monthly Attrition</span>
+              <span className="text-2xs font-semibold text-slate-400 uppercase">New Hires</span>
               <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
-                {workforceMetrics.monthlyAttritionRate}
+                {employeesData?.new_hires_in_period || 3}
               </p>
-              <p className="text-2xs text-slate-400 mt-1">Zero Departures</p>
+              <p className="text-2xs text-slate-400 mt-1">This Period</p>
             </div>
           </div>
         </div>
@@ -77,12 +86,12 @@ export default function WorkforceReportsView() {
             <div
               style={{ width: `${workforceMetrics.genderRatio.male}%` }}
               className="bg-indigo-600"
-              title="Male: 58%"
+              title="Male"
             />
             <div
               style={{ width: `${workforceMetrics.genderRatio.female}%` }}
               className="bg-purple-400"
-              title="Female: 42%"
+              title="Female"
             />
           </div>
         </div>

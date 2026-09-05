@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import WorkingScheduleHeader from '../components/WorkingScheduleHeader';
 import ScheduleStats from '../components/ScheduleStats';
 import ScheduleTabs from '../components/ScheduleTabs';
@@ -16,6 +16,7 @@ import HolidayCalendarTab from '../components/HolidayCalendarTab';
 import ScheduleSettingsTab from '../components/ScheduleSettingsTab';
 
 import { initialEmployeesSchedule } from '../data/workingScheduleData';
+import { employeeService } from '../../employees/services/employeeService';
 
 export default function WorkingSchedulesPage() {
   // Navigation tabs
@@ -37,6 +38,46 @@ export default function WorkingSchedulesPage() {
   // Week offset state (0 = 22 Sep - 28 Sep, -1 = 15 Sep - 21 Sep, 1 = 29 Sep - 05 Oct)
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedCalendarDay, setSelectedCalendarDay] = useState(22);
+
+  useEffect(() => {
+    const fetchEmployeesForSchedule = async () => {
+      try {
+        const res = await employeeService.getEmployees({ page: 1, page_size: 50 });
+        if (res?.items && res.items.length > 0) {
+          const mapped = res.items.map((emp, index) => {
+            const fullName = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'Employee';
+            const initials = fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) || 'EM';
+
+            return {
+              id: emp.employee_code || emp.id,
+              realId: emp.id,
+              name: fullName,
+              role: emp.designation_title || 'Staff',
+              department: emp.department_name || 'General',
+              location: emp.work_location_name || 'Mumbai HQ',
+              scheduleType: index % 3 === 0 ? 'Flexible General' : index % 2 === 0 ? 'Engineering Core' : 'General Standard',
+              totalHours: 40,
+              initials: initials,
+              avatarBg: ['bg-purple-100 text-purple-700', 'bg-blue-100 text-blue-700', 'bg-emerald-100 text-emerald-700'][index % 3],
+              days: {
+                mon: { type: 'shift', label: '9:00 AM\n- 5:00 PM', time: '9:00 AM - 5:00 PM', location: emp.work_location_name || 'Mumbai HQ' },
+                tue: { type: 'shift', label: '9:00 AM\n- 5:00 PM', time: '9:00 AM - 5:00 PM', location: emp.work_location_name || 'Mumbai HQ' },
+                wed: { type: 'shift', label: '9:00 AM\n- 5:00 PM', time: '9:00 AM - 5:00 PM', location: emp.work_location_name || 'Mumbai HQ' },
+                thu: { type: index % 2 === 0 ? 'remote' : 'shift', label: index % 2 === 0 ? 'Remote' : '9:00 AM\n- 5:00 PM', time: '9:00 AM - 5:00 PM', location: 'Remote Work' },
+                fri: { type: 'shift', label: '9:00 AM\n- 5:00 PM', time: '9:00 AM - 5:00 PM', location: emp.work_location_name || 'Mumbai HQ' },
+                sat: { type: 'off', label: 'Off', time: 'Rest Day', location: 'None' },
+                sun: { type: 'off', label: 'Off', time: 'Rest Day', location: 'None' },
+              },
+            };
+          });
+          setEmployeesSchedule(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to load schedule employees:', err);
+      }
+    };
+    fetchEmployeesForSchedule();
+  }, []);
 
   // Dynamic week definitions based on weekOffset
   const { weekRangeText, weekDays } = useMemo(() => {
@@ -80,7 +121,6 @@ export default function WorkingSchedulesPage() {
         ],
       };
     } else {
-      // General formula for other weeks
       const baseStart = new Date(2026, 8, 22);
       baseStart.setDate(baseStart.getDate() + weekOffset * 7);
       const baseEnd = new Date(baseStart);
@@ -160,7 +200,6 @@ export default function WorkingSchedulesPage() {
   };
 
   const handleCreateSchedule = (scheduleConfig) => {
-    // Add or update schedules for targeted department or employees
     setEmployeesSchedule((prev) =>
       prev.map((emp) => {
         if (
@@ -210,7 +249,6 @@ export default function WorkingSchedulesPage() {
   };
 
   const handleApplyTemplate = (tpl) => {
-    // Apply template across matching department
     setEmployeesSchedule((prev) =>
       prev.map((emp) => {
         if (tpl.department === 'All Departments' || emp.department === tpl.department) {
@@ -268,7 +306,7 @@ export default function WorkingSchedulesPage() {
       />
 
       {/* 4 Summary KPIs */}
-      <ScheduleStats />
+      <ScheduleStats totalCount={employeesSchedule.length} />
 
       {/* Navigation Tabs */}
       <ScheduleTabs activeTab={activeTab} onSelectTab={setActiveTab} />

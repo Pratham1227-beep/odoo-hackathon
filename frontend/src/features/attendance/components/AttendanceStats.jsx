@@ -2,10 +2,10 @@ import React from 'react';
 import { Users, CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 export default function AttendanceStats({
-  totalEmployees = 118,
-  presentCount = 92,
-  absentCount = 14,
-  leaveCount = 12,
+  totalEmployees = 0,
+  presentCount = 0,
+  absentCount = 0,
+  leaveCount = 0,
 }) {
   const presentPct = totalEmployees > 0 ? ((presentCount / totalEmployees) * 100).toFixed(1) : 0;
   const absentPct = totalEmployees > 0 ? ((absentCount / totalEmployees) * 100).toFixed(1) : 0;

@@ -151,7 +151,7 @@ class Employee(OrgScopedModel):
         "Employee",
         foreign_keys=[manager_id],
         back_populates="manager",
-        lazy="selectin",
+        lazy="select",
     )
     bank_account: Mapped[Optional["EmployeeBankDetail"]] = relationship(
         "EmployeeBankDetail",
@@ -164,8 +164,9 @@ class Employee(OrgScopedModel):
         "EmployeeDocument",
         back_populates="employee",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
+
 
 
 class EmployeeBankDetail(OrgScopedModel):

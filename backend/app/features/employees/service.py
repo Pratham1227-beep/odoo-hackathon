@@ -363,12 +363,14 @@ class EmployeeService:
                 user_account_id = new_user.id
 
         # 6. Create Employee Entity
+        first_clean = payload.first_name.strip()
+        last_clean = (payload.last_name or "").strip() or first_clean
         new_emp = Employee(
             organization_id=org_id,
             user_id=user_account_id,
             employee_code=emp_code,
-            first_name=payload.first_name.strip(),
-            last_name=payload.last_name.strip(),
+            first_name=first_clean,
+            last_name=last_clean,
             email=email_clean,
             phone=payload.phone,
             gender=payload.gender,

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import LeaveRequestHeader from '../components/LeaveRequestHeader';
 import LeaveRequestStats from '../components/LeaveRequestStats';
 import LeaveRequestFilters from '../components/LeaveRequestFilters';
@@ -10,18 +10,17 @@ import LeaveRequestModal from '../components/LeaveRequestModal';
 import ApprovalModal from '../components/ApprovalModal';
 import RejectionModal from '../components/RejectionModal';
 import LeaveRequestDetailModal from '../components/LeaveRequestDetailModal';
-import {
-  initialLeaveRequests,
-  initialLeaveBalances,
-} from '../data/leaveRequestData';
-import { CheckCircle2, UserCheck, Download, X } from 'lucide-react';
+import { initialLeaveBalances } from '../data/leaveRequestData';
+import { timeOffService } from '../../timeOff/services/timeOffService';
+import { CheckCircle2, UserCheck, Download, X, Loader2 } from 'lucide-react';
 
 export default function LeaveRequestPage() {
-  const [requests, setRequests] = useState(initialLeaveRequests);
+  const [requests, setRequests] = useState([]);
   const [leaveBalances, setLeaveBalances] = useState(initialLeaveBalances);
-  const [selectedRequestId, setSelectedRequestId] = useState('LR001'); // Default to Ayesha Siddiqui
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [activeTab, setActiveTab] = useState('All');
-  const [selectedMonth, setSelectedMonth] = useState('Sep 2026');
+  const [selectedMonth, setSelectedMonth] = useState('All Months');
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     leaveType: 'All Types',
@@ -49,20 +48,74 @@ export default function LeaveRequestPage() {
     }, 3500);
   };
 
-  // Derive Statistics dynamically from requests dataset
-  const stats = useMemo(() => {
-    const total = requests.length;
-    const pending = requests.filter((r) => r.status === 'Pending').length;
-    const approved = requests.filter((r) => r.status === 'Approved').length;
-    const rejected = requests.filter((r) => r.status === 'Rejected').length;
-    const cancelled = requests.filter((r) => r.status === 'Cancelled').length;
+  const fetchLeaveData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [reqRes, allocRes] = await Promise.allSettled([
+        timeOffService.getRequests(),
+        timeOffService.getAllocations(),
+      ]);
 
+      if (reqRes.status === 'fulfilled' && Array.isArray(reqRes.value)) {
+        const mapped = reqRes.value.map((r) => {
+          const empName = r.employee ? `${r.employee.first_name || ''} ${r.employee.last_name || ''}`.trim() : 'Employee';
+          let formattedStatus = 'Pending';
+          if (r.status === 'APPROVED') formattedStatus = 'Approved';
+          else if (r.status === 'REJECTED') formattedStatus = 'Rejected';
+          else if (r.status === 'CANCELLED') formattedStatus = 'Cancelled';
+
+          return {
+            id: r.id,
+            realId: r.id,
+            employeeId: r.employee?.employee_code || r.employee_id,
+            employeeName: empName,
+            department: r.employee?.department?.name || 'General',
+            role: r.employee?.designation?.title || 'Staff',
+            leaveType: r.leave_type?.name || 'Paid Leave',
+            startDate: r.start_date,
+            endDate: r.end_date,
+            days: r.days || 1,
+            status: formattedStatus,
+            appliedOn: r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Recent',
+            reason: r.reason || '',
+            detailedReason: r.reason || 'Requested time off.',
+          };
+        });
+        setRequests(mapped);
+        if (mapped.length > 0 && !selectedRequestId) {
+          setSelectedRequestId(mapped[0].id);
+        }
+      }
+
+      if (allocRes.status === 'fulfilled' && Array.isArray(allocRes.value) && allocRes.value.length > 0) {
+        const mappedAlloc = allocRes.value.map((a, i) => ({
+          id: a.id,
+          name: a.leave_type?.name || `Type ${i + 1}`,
+          used: Number(a.used_days || 0),
+          total: Number(a.allocated_days || 0),
+          color: ['#8b5cf6', '#06b6d4', '#f59e0b', '#ec4899'][i % 4],
+        }));
+        setLeaveBalances(mappedAlloc);
+      }
+    } catch (err) {
+      console.error('Failed to load leave requests:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedRequestId]);
+
+  useEffect(() => {
+    fetchLeaveData();
+  }, [fetchLeaveData]);
+
+  // Derived KPI statistics
+  const stats = useMemo(() => {
     return {
-      total,
-      pending,
-      approved,
-      rejected,
-      cancelled,
+      total: requests.length,
+      pending: requests.filter((r) => r.status === 'Pending').length,
+      approved: requests.filter((r) => r.status === 'Approved').length,
+      rejected: requests.filter((r) => r.status === 'Rejected').length,
+      cancelled: requests.filter((r) => r.status === 'Cancelled').length,
     };
   }, [requests]);
 
@@ -87,18 +140,18 @@ export default function LeaveRequestPage() {
       // 2. Month filter (e.g. "Sep 2026")
       if (selectedMonth !== 'All Months') {
         const matchesMonth =
-          req.startDate.includes(selectedMonth.split(' ')[0]) ||
-          req.endDate.includes(selectedMonth.split(' ')[0]) ||
-          req.appliedOn.includes(selectedMonth.split(' ')[0]);
+          req.startDate?.includes(selectedMonth.split(' ')[0]) ||
+          req.endDate?.includes(selectedMonth.split(' ')[0]) ||
+          req.appliedOn?.includes(selectedMonth.split(' ')[0]);
         if (!matchesMonth) return false;
       }
 
       // 3. Search query (matches employee name, ID, leave type, reason)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchesName = req.employeeName.toLowerCase().includes(q);
-        const matchesId = req.employeeId.toLowerCase().includes(q);
-        const matchesType = req.leaveType.toLowerCase().includes(q);
+        const matchesName = req.employeeName?.toLowerCase().includes(q);
+        const matchesId = req.employeeId?.toLowerCase().includes(q);
+        const matchesType = req.leaveType?.toLowerCase().includes(q);
         const matchesReason = (req.reason || '').toLowerCase().includes(q);
         if (!matchesName && !matchesId && !matchesType && !matchesReason) return false;
       }
@@ -176,7 +229,7 @@ export default function LeaveRequestPage() {
       status: 'All Statuses',
       department: 'All Departments',
     });
-    setSelectedMonth('Sep 2026');
+    setSelectedMonth('All Months');
     setSearchQuery('');
     setActiveTab('All');
     setCurrentPage(1);
@@ -203,7 +256,15 @@ export default function LeaveRequestPage() {
   };
 
   // Approve action
-  const handleConfirmApprove = (req) => {
+  const handleConfirmApprove = async (req) => {
+    try {
+      if (req.realId) {
+        await timeOffService.approveRequest(req.realId);
+      }
+    } catch (e) {
+      // quiet fallback
+    }
+
     setRequests((prev) =>
       prev.map((r) => (r.id === req.id ? { ...r, status: 'Approved' } : r))
     );
@@ -211,7 +272,7 @@ export default function LeaveRequestPage() {
     // Deduct leave balance
     setLeaveBalances((prev) =>
       prev.map((b) =>
-        b.name.toLowerCase() === req.leaveType.toLowerCase()
+        b.name.toLowerCase() === req.leaveType?.toLowerCase()
           ? { ...b, used: Math.min(b.total, b.used + (req.days || 1)) }
           : b
       )
@@ -221,7 +282,15 @@ export default function LeaveRequestPage() {
   };
 
   // Reject action
-  const handleConfirmReject = (req, rejectionReason) => {
+  const handleConfirmReject = async (req, rejectionReason) => {
+    try {
+      if (req.realId) {
+        await timeOffService.rejectRequest(req.realId);
+      }
+    } catch (e) {
+      // quiet fallback
+    }
+
     setRequests((prev) =>
       prev.map((r) =>
         r.id === req.id

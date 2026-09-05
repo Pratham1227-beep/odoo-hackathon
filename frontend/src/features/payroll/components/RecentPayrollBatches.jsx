@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FileSpreadsheet,
@@ -8,15 +8,49 @@ import {
   ExternalLink,
   Download,
   Users,
+  Loader2,
 } from 'lucide-react';
 import { recentBatches } from '../data/payrollData';
+import { payrunService } from '../../payrun/services/payrunService';
 
 export default function RecentPayrollBatches() {
+  const [batches, setBatches] = useState(recentBatches);
   const [downloadedId, setDownloadedId] = useState(null);
+
+  useEffect(() => {
+    const loadLivePayruns = async () => {
+      try {
+        const res = await payrunService.listPayruns({ page: 1, page_size: 10 });
+        if (res?.items && res.items.length > 0) {
+          const mapped = res.items.map((r) => {
+            const net = Number(r.total_net_salary || 0);
+            const gross = Number(r.total_gross_salary || net * 1.15);
+            return {
+              id: r.id.slice(0, 8).toUpperCase(),
+              realId: r.id,
+              period: r.name || `${r.month}/${r.year}`,
+              structure: 'Standard Salary Structure',
+              employeesCount: r.total_employees || 0,
+              grossPayout: `₹${(gross / 100000).toFixed(2)}L`,
+              netPayout: `₹${(net / 100000).toFixed(2)}L`,
+              status: r.status === 'PAID' ? 'Finalized' : r.status === 'CALCULATED' ? 'Ready' : 'Draft',
+              statusType: r.status === 'PAID' ? 'emerald' : 'amber',
+              payDate: r.finalized_at ? new Date(r.finalized_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '30 Sep 2026',
+              actionLink: '/payrun',
+            };
+          });
+          setBatches(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to load recent payruns:', err);
+      }
+    };
+    loadLivePayruns();
+  }, []);
 
   const handleDownloadSummary = (id) => {
     setDownloadedId(id);
-    const batch = recentBatches.find((b) => b.id === id);
+    const batch = batches.find((b) => b.id === id) || batches[0];
     const content = `Batch ID: ${batch.id}\nPeriod: ${batch.period}\nEmployees: ${batch.employeesCount}\nGross Payout: ${batch.grossPayout}\nNet Payout: ${batch.netPayout}\nStatus: ${batch.status}\nPay Date: ${batch.payDate}\n`;
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -65,7 +99,7 @@ export default function RecentPayrollBatches() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {recentBatches.map((batch) => (
+            {batches.map((batch) => (
               <tr
                 key={batch.id}
                 className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group"

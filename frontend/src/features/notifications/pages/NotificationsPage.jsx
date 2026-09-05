@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import NotificationHeader from '../components/NotificationHeader';
 import NotificationStats from '../components/NotificationStats';
@@ -11,11 +11,13 @@ import NotificationDetailModal from '../components/NotificationDetailModal';
 import NotificationSettingsModal from '../components/NotificationSettingsModal';
 import ArchivedNotificationsModal from '../components/ArchivedNotificationsModal';
 import AllActivityModal from '../components/AllActivityModal';
+import { notificationService } from '../services/notificationService';
 import {
   initialNotifications,
   initialActivities,
   initialNotificationSettings,
 } from '../data/notificationsData';
+import { Loader2 } from 'lucide-react';
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
@@ -25,6 +27,7 @@ export default function NotificationsPage() {
   const [activities, setActivities] = useState(initialActivities);
   const [settings, setSettings] = useState(initialNotificationSettings);
   const [activeTab, setActiveTab] = useState('all');
+  const [loading, setLoading] = useState(true);
 
   // Filters State
   const [filters, setFilters] = useState({
@@ -55,6 +58,38 @@ export default function NotificationsPage() {
       setToastMessage(null);
     }, 3500);
   };
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const res = await notificationService.listNotifications({ page: 1, page_size: 50 });
+      if (res && res.items && res.items.length > 0) {
+        const mapped = res.items.map((item) => ({
+          id: item.id,
+          title: item.title,
+          message: item.message,
+          type: item.type || 'system',
+          module: item.type?.toLowerCase().includes('pay') ? 'payroll' : item.type?.toLowerCase().includes('leave') ? 'timeoff' : 'system',
+          status: item.is_read ? 'read' : 'unread',
+          severity: item.severity || 'INFO',
+          important: item.severity === 'HIGH' || item.severity === 'CRITICAL',
+          mention: false,
+          timestamp: new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          date: new Date(item.created_at).toLocaleDateString(),
+          link: item.link || null,
+        }));
+        setNotifications(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to load notifications', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   // Counts Calculation
   const counts = useMemo(() => {
@@ -107,24 +142,38 @@ export default function NotificationsPage() {
     appliedFilters.dateRange !== 'last7days';
 
   // Actions
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.status === 'unread' ? { ...n, status: 'read' } : n))
-    );
-    showToast('All notifications marked as read.');
+  const handleMarkAllAsRead = async () => {
+    try {
+      const unreadList = notifications.filter((n) => n.status === 'unread');
+      await Promise.allSettled(unreadList.map((n) => notificationService.markAsRead(n.id)));
+      setNotifications((prev) =>
+        prev.map((n) => (n.status === 'unread' ? { ...n, status: 'read' } : n))
+      );
+      showToast('All notifications marked as read.');
+    } catch (err) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.status === 'unread' ? { ...n, status: 'read' } : n))
+      );
+      showToast('All notifications marked as read.');
+    }
   };
 
-  const handleToggleRead = (id) => {
+  const handleToggleRead = async (id) => {
+    const target = notifications.find((n) => n.id === id);
+    const newStatus = target?.status === 'unread' ? 'read' : 'unread';
+    
+    if (newStatus === 'read') {
+      try {
+        await notificationService.markAsRead(id);
+      } catch (e) {
+        // ignore if mock id
+      }
+    }
+
     setNotifications((prev) =>
-      prev.map((n) => {
-        if (n.id === id) {
-          const newStatus = n.status === 'unread' ? 'read' : 'unread';
-          showToast(newStatus === 'read' ? 'Marked as read.' : 'Marked as unread.');
-          return { ...n, status: newStatus };
-        }
-        return n;
-      })
+      prev.map((n) => (n.id === id ? { ...n, status: newStatus } : n))
     );
+    showToast(newStatus === 'read' ? 'Marked as read.' : 'Marked as unread.');
   };
 
   const handleToggleImportant = (id) => {
@@ -233,19 +282,25 @@ export default function NotificationsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Column 1: Notifications (5 cols) */}
         <div className="lg:col-span-5 space-y-6">
-          <NotificationList
-            notifications={filteredNotifications}
-            activeTab={activeTab}
-            onChangeTab={setActiveTab}
-            counts={counts}
-            onSelectNotification={setSelectedNotification}
-            onToggleRead={handleToggleRead}
-            onToggleImportant={handleToggleImportant}
-            onArchive={handleArchive}
-            onNavigate={handleNavigate}
-            onClearFilters={handleResetFilters}
-            isFiltered={isFiltered}
-          />
+          {loading ? (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-100 dark:border-slate-800 flex items-center justify-center">
+              <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+            </div>
+          ) : (
+            <NotificationList
+              notifications={filteredNotifications}
+              activeTab={activeTab}
+              onChangeTab={setActiveTab}
+              counts={counts}
+              onSelectNotification={setSelectedNotification}
+              onToggleRead={handleToggleRead}
+              onToggleImportant={handleToggleImportant}
+              onArchive={handleArchive}
+              onNavigate={handleNavigate}
+              onClearFilters={handleResetFilters}
+              isFiltered={isFiltered}
+            />
+          )}
         </div>
 
         {/* Column 2: Recent Activity (4 cols) */}
