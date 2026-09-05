@@ -10,7 +10,8 @@ import {
   Settings,
   ArrowRight,
   Sparkles,
-  X
+  X,
+  FileText
 } from 'lucide-react';
 import WageWiseLogo from '../components/WageWiseLogo';
 
@@ -18,9 +19,10 @@ const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Employees', path: '/employees', icon: Users },
   { name: 'Attendance', path: '/attendance', icon: Clock },
+  { name: 'Time Off', path: '/time-off', icon: Calendar },
+  { name: 'Leave Request', path: '/leave-request', icon: FileText },
   { name: 'Payroll', path: '/payroll', icon: Coins },
   { name: 'Reports', path: '/reports', icon: BarChart3 },
-  { name: 'Leave Management', path: '/leave-management', icon: Calendar },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
