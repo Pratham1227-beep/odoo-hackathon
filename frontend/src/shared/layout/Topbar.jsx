@@ -66,7 +66,8 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
 
         {/* Notifications */}
         <button
-          className="relative p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          onClick={() => navigate('/notifications')}
+          className="relative p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           aria-label="Notifications"
         >
           <Bell className="w-5 h-5" />
