@@ -20,6 +20,12 @@ from app.features.payroll_config.models import (  # noqa: F401
     SystemConfig,
 )
 from app.features.contracts.models import Contract  # noqa: F401
+from app.features.attendance.models import (  # noqa: F401
+    Attendance,
+    AttendanceCorrection,
+    Holiday,
+)
+
 
 
 config = context.config

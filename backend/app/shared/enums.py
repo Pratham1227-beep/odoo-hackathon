@@ -104,3 +104,30 @@ class ContractStatus(str, Enum):
     EXPIRED = "EXPIRED"
     TERMINATED = "TERMINATED"
 
+
+class AttendanceStatus(str, Enum):
+    PRESENT = "PRESENT"
+    LATE = "LATE"
+    HALF_DAY = "HALF_DAY"
+    ABSENT = "ABSENT"
+    HOLIDAY = "HOLIDAY"
+
+
+class AttendanceSource(str, Enum):
+    SELF = "SELF"
+    MANUAL = "MANUAL"
+    SYSTEM = "SYSTEM"
+
+
+class CorrectionStatus(str, Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+class HolidayType(str, Enum):
+    PUBLIC = "PUBLIC"
+    OPTIONAL = "OPTIONAL"
+    COMPANY = "COMPANY"
+
+
