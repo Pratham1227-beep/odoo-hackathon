@@ -131,3 +131,13 @@ class HolidayType(str, Enum):
     COMPANY = "COMPANY"
 
 
+class LeaveRequestStatus(str, Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
+LeaveStatus = LeaveRequestStatus
+
+
+
