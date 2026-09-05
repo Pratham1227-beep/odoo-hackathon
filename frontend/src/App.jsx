@@ -11,6 +11,9 @@ import TimeOffPage from './features/timeOff/pages/TimeOffPage';
 import LeaveRequestPage from './features/leaveRequest/pages/LeaveRequestPage';
 import SalarySetupPage from './features/salarySetup/pages/SalarySetupPage';
 import PayrunPage from './features/payrun/pages/PayrunPage';
+import PayrunProcessingPage from './features/payrun/pages/PayrunProcessingPage';
+import PayslipViewPage from './features/payrun/pages/PayslipViewPage';
+import PayrollPage from './features/payroll/pages/PayrollPage';
 import AppLayout from './shared/layout/AppLayout';
 import ProtectedRoute from './shared/components/ProtectedRoute';
 
@@ -123,10 +126,90 @@ export default function App() {
           }
         />
         <Route
+          path="/payrun/processing"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <PayrunProcessingPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/payrun/validation"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <PayrunProcessingPage />
+            </AppLayout>
+          }
+        />
+        <Route
           path="/payroll"
           element={
             <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <PayrunPage />
+              <PayrollPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/payroll/processing"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <PayrunProcessingPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/payroll/payslips/:employeeId"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <PayslipViewPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/payroll/payslips"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <PayslipViewPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/payrun/payslips/:employeeId"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <PayslipViewPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/payrun/payslips"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <PayslipViewPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/payslips"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <PayslipViewPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/payslips/:employeeId"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <PayslipViewPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/payslip"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <PayslipViewPage />
             </AppLayout>
           }
         />

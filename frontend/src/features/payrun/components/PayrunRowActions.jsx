@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MoreVertical, FileText, RefreshCw, PauseCircle, PlayCircle, User, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { MoreVertical, FileText, RefreshCw, PauseCircle, PlayCircle, User, Trash2, ExternalLink } from 'lucide-react';
 
 export default function PayrunRowActions({
   employee,
@@ -47,8 +48,17 @@ export default function PayrunRowActions({
             className="w-full flex items-center gap-2 px-3.5 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-left cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5 text-indigo-500" />
-            <span>View Payslip</span>
+            <span>Quick View Payslip</span>
           </button>
+
+          <Link
+            to={`/payroll/payslips/${employee.id}`}
+            onClick={() => setIsOpen(false)}
+            className="w-full flex items-center gap-2 px-3.5 py-2 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-left cursor-pointer"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-indigo-500" />
+            <span>Open Payslip Page</span>
+          </Link>
 
           {/* Recalculate */}
           <button

@@ -410,3 +410,205 @@ export const initialStages = [
     status: 'active',
   },
 ];
+
+// Horizontal 5-Step Process for Payrun Validation Screen
+export const initialValidationStepStages = [
+  {
+    step: 1,
+    title: 'Select Period',
+    subtitle: 'Sep 2026',
+    state: 'completed',
+  },
+  {
+    step: 2,
+    title: 'Validate Data',
+    subtitle: 'Check for errors',
+    state: 'active',
+  },
+  {
+    step: 3,
+    title: 'Review & Adjust',
+    subtitle: 'Make changes if needed',
+    state: 'pending',
+  },
+  {
+    step: 4,
+    title: 'Confirm & Process',
+    subtitle: 'Generate payslips',
+    state: 'pending',
+  },
+  {
+    step: 5,
+    title: 'Completed',
+    subtitle: 'Payroll processed',
+    state: 'pending',
+  },
+];
+
+// Initial 6 Validation Checklist Items
+export const initialValidationChecklist = [
+  {
+    id: 'master-data',
+    title: 'Employee master data',
+    description: 'All selected employees have valid profiles',
+    status: 'passed', // passed, warning, error
+    icon: 'Users',
+  },
+  {
+    id: 'attendance-leave',
+    title: 'Attendance & leave data',
+    description: 'Attendance and approved leaves fetched',
+    status: 'passed',
+    icon: 'Calendar',
+  },
+  {
+    id: 'salary-components',
+    title: 'Salary components',
+    description: 'All earnings and deductions configured',
+    status: 'passed',
+    icon: 'FileText',
+  },
+  {
+    id: 'tax-calculations',
+    title: 'Tax calculations',
+    description: 'PF, ESI, TDS and other taxes validated',
+    status: 'warning',
+    icon: 'Percent',
+  },
+  {
+    id: 'bank-details',
+    title: 'Bank details',
+    description: 'Bank accounts verified for salary transfer',
+    status: 'error',
+    icon: 'Landmark',
+  },
+  {
+    id: 'net-pay',
+    title: 'Net pay calculation',
+    description: 'Net pay values within expected range',
+    status: 'passed',
+    icon: 'Calculator',
+  },
+];
+
+// Initial 6 Employee Validation Issues (2 Errors, 4 Warnings)
+export const initialValidationIssues = [
+  {
+    id: 'ISS-001',
+    employeeId: 'EMP001',
+    employeeName: 'Ayesha Siddiqui',
+    department: 'Engineering',
+    issueType: 'Missing Bank Details',
+    details: 'No bank account added',
+    severity: 'error', // 'error' | 'warning'
+    action: 'Update',
+    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=256',
+    initials: 'AS',
+    avatarTheme: 'purple',
+  },
+  {
+    id: 'ISS-002',
+    employeeId: 'EMP004',
+    employeeName: 'Arjun Nair',
+    department: 'Sales',
+    issueType: 'Missing Bank Details',
+    details: 'IFSC code invalid',
+    severity: 'error',
+    action: 'Update',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=256',
+    initials: 'AN',
+    avatarTheme: 'teal',
+  },
+  {
+    id: 'ISS-003',
+    employeeId: 'EMP006',
+    employeeName: 'Karan Verma',
+    department: 'Finance',
+    issueType: 'Unapproved Overtime',
+    details: '8 hours pending approval',
+    severity: 'warning',
+    action: 'Review',
+    avatar: null,
+    initials: 'KV',
+    avatarTheme: 'purple',
+  },
+  {
+    id: 'ISS-004',
+    employeeId: 'EMP007',
+    employeeName: 'Neha Sharma',
+    department: 'Engineering',
+    issueType: 'Leave Without Pay',
+    details: '2 days LWP',
+    severity: 'warning',
+    action: 'Review',
+    avatar: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&q=80&w=256',
+    initials: 'NS',
+    avatarTheme: 'rose',
+  },
+  {
+    id: 'ISS-005',
+    employeeId: 'EMP011',
+    employeeName: 'Vikram Malhotra',
+    department: 'Marketing',
+    issueType: 'Overtime Not Approved',
+    details: '4 hours pending manager sign-off',
+    severity: 'warning',
+    action: 'Review',
+    avatar: null,
+    initials: 'VM',
+    avatarTheme: 'blue',
+  },
+  {
+    id: 'ISS-006',
+    employeeId: 'EMP010',
+    employeeName: 'Pooja Nair',
+    department: 'Engineering',
+    issueType: 'Leave Without Pay',
+    details: '1 day LWP marked for verification',
+    severity: 'warning',
+    action: 'Review',
+    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=256',
+    initials: 'PN',
+    avatarTheme: 'mint',
+  },
+];
+
+// Validation Engine Calculation Helper
+export function evaluateValidationResults(issues = [], totalEmployees = 118) {
+  const errors = issues.filter((i) => i.severity === 'error');
+  const warnings = issues.filter((i) => i.severity === 'warning');
+
+  const errorsCount = errors.length;
+  const warningsCount = warnings.length;
+
+  // 112 valid when 6 issues exist, increasing to 118 when all resolved
+  const validRecords = totalEmployees - (errorsCount + warningsCount);
+
+  const checklist = initialValidationChecklist.map((item) => {
+    if (item.id === 'bank-details') {
+      return {
+        ...item,
+        status: errorsCount > 0 ? 'error' : 'passed',
+      };
+    }
+    if (item.id === 'tax-calculations') {
+      return {
+        ...item,
+        status: warningsCount > 0 ? 'warning' : 'passed',
+      };
+    }
+    return item;
+  });
+
+  return {
+    totalEmployees,
+    validRecords,
+    errorsCount,
+    warningsCount,
+    canProceed: errorsCount === 0,
+    checklist,
+    errors,
+    warnings,
+  };
+}
+
