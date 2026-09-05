@@ -10,6 +10,7 @@ import AttendancePage from './features/attendance/pages/AttendancePage';
 import TimeOffPage from './features/timeOff/pages/TimeOffPage';
 import LeaveRequestPage from './features/leaveRequest/pages/LeaveRequestPage';
 import AppLayout from './shared/layout/AppLayout';
+import ProtectedRoute from './shared/components/ProtectedRoute';
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -48,9 +49,11 @@ export default function App() {
         <Route
           path="/dashboard"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <DashboardPage />
-            </AppLayout>
+            <ProtectedRoute>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <DashboardPage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route

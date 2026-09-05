@@ -11,12 +11,15 @@ import {
   Settings
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
 
 export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
+  const { user, organization, logout } = useAuthStore();
 
   const handleLogout = () => {
+    logout();
     navigate('/login');
   };
 
@@ -79,16 +82,16 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
           >
             {/* Avatar with 'A' */}
             <div className="w-9 h-9 rounded-full bg-indigo-600 text-white font-bold text-sm flex items-center justify-center shadow-xs shadow-indigo-500/25 shrink-0">
-              A
+              {user?.email?.charAt(0).toUpperCase() || 'U'}
             </div>
 
             {/* Info */}
             <div className="hidden sm:flex flex-col text-left">
-              <span className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                Admin
+              <span className="text-sm font-bold text-slate-900 dark:text-white leading-tight max-w-[100px] truncate">
+                {user?.email || 'User'}
               </span>
-              <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight">
-                Acme Pvt. Ltd.
+              <span className="text-xs text-slate-500 dark:text-slate-400 leading-tight max-w-[100px] truncate">
+                {organization?.name || 'Organization'}
               </span>
             </div>
 
@@ -99,8 +102,8 @@ export default function Topbar({ isDarkMode, toggleDarkMode, onOpenSidebar }) {
           {showProfileMenu && (
             <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 sm:hidden">
-                <p className="text-sm font-bold text-slate-900 dark:text-white">Admin</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Acme Pvt. Ltd.</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user?.email || 'User'}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{organization?.name || 'Organization'}</p>
               </div>
 
               <a

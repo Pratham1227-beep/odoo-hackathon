@@ -24,7 +24,7 @@ function GoogleIcon({ className = 'w-4 h-4' }) {
   );
 }
 
-export default function LoginForm({ onSubmit }) {
+export default function LoginForm({ onSubmit, apiError }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
@@ -55,18 +55,21 @@ export default function LoginForm({ onSubmit }) {
     validate();
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setTouched({ email: true, password: true });
 
     if (validate()) {
       setIsLoading(true);
-      if (onSubmit) {
-        onSubmit({ email, password, rememberMe });
-      }
-      setTimeout(() => {
+      try {
+        if (onSubmit) {
+          await onSubmit({ email, password, rememberMe });
+        }
+      } catch (err) {
+        // Error is handled by parent, we just stop loading
+      } finally {
         setIsLoading(false);
-      }, 600);
+      }
     }
   };
 
@@ -86,6 +89,12 @@ export default function LoginForm({ onSubmit }) {
           Welcome back! Please enter your details to continue.
         </p>
       </div>
+
+      {apiError && (
+        <div className="mb-6 p-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+          {apiError}
+        </div>
+      )}
 
       {/* Login Form */}
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
