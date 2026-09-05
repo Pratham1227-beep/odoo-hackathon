@@ -14,7 +14,8 @@ import {
   FileText,
   SlidersHorizontal,
   PlayCircle,
-  Receipt
+  Receipt,
+  CalendarDays
 } from 'lucide-react';
 import WageWiseLogo from '../components/WageWiseLogo';
 
@@ -29,6 +30,7 @@ const navItems = [
   { name: 'Payrun', path: '/payrun', icon: PlayCircle },
   { name: 'Payslips', path: '/payslips', icon: Receipt },
   { name: 'Reports', path: '/reports', icon: BarChart3 },
+  { name: 'Working Schedules', path: '/working-schedules', icon: CalendarDays },
   { name: 'Settings', path: '/settings', icon: Settings },
 ];
 
