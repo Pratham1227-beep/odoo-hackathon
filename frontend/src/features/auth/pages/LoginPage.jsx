@@ -1,13 +1,16 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Sun, Moon, ArrowRight } from 'lucide-react';
 import WageWiseLogo from '../../../shared/components/WageWiseLogo';
 import LoginBrandPanel from '../components/LoginBrandPanel';
 import LoginForm from '../components/LoginForm';
 
 export default function LoginPage({ isDarkMode, toggleDarkMode }) {
+  const navigate = useNavigate();
+
   const handleLoginSubmit = (credentials) => {
     console.log('Login submitted:', credentials);
+    navigate('/dashboard');
   };
 
   return (
