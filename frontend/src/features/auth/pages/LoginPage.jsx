@@ -1,16 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Sun, Moon, ArrowRight } from 'lucide-react';
 import WageWiseLogo from '../../../shared/components/WageWiseLogo';
 import LoginBrandPanel from '../components/LoginBrandPanel';
 import LoginForm from '../components/LoginForm';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 export default function LoginPage({ isDarkMode, toggleDarkMode }) {
   const navigate = useNavigate();
+  const { login } = useAuthStore();
+  const [apiError, setApiError] = useState(null);
 
-  const handleLoginSubmit = (credentials) => {
-    console.log('Login submitted:', credentials);
-    navigate('/dashboard');
+  const handleLoginSubmit = async (credentials) => {
+    try {
+      setApiError(null);
+      await login(credentials);
+      navigate('/dashboard');
+    } catch (err) {
+      setApiError(err.response?.data?.detail || 'Failed to login. Please check your credentials.');
+      throw err;
+    }
   };
 
   return (
@@ -67,7 +76,7 @@ export default function LoginPage({ isDarkMode, toggleDarkMode }) {
 
           {/* Right Column: Authentication Card */}
           <div className="w-full lg:col-span-7 xl:col-span-7 max-w-xl mx-auto lg:max-w-none flex justify-center lg:justify-end">
-            <LoginForm onSubmit={handleLoginSubmit} />
+            <LoginForm onSubmit={handleLoginSubmit} apiError={apiError} />
           </div>
         </div>
       </main>

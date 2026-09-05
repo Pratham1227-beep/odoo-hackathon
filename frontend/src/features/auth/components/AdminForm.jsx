@@ -15,7 +15,9 @@ export default function AdminForm({
   formData,
   updateFormData,
   onContinue,
-  onStepClick
+  onStepClick,
+  apiError,
+  isSubmitting
 }) {
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
@@ -108,6 +110,12 @@ export default function AdminForm({
           Create your admin account to manage WageWise.
         </p>
       </div>
+
+      {apiError && (
+        <div className="mt-6 p-3 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+          {apiError}
+        </div>
+      )}
 
       {/* Form Fields */}
       <form onSubmit={handleSubmit} className="mt-6 space-y-4" noValidate>
@@ -275,9 +283,10 @@ export default function AdminForm({
         <div className="pt-3">
           <button
             type="submit"
-            className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-sm shadow-md shadow-indigo-500/25 active:scale-[0.99] transition-all cursor-pointer"
+            disabled={isSubmitting}
+            className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-sm shadow-md shadow-indigo-500/25 active:scale-[0.99] disabled:opacity-70 transition-all cursor-pointer"
           >
-            <span>Continue</span>
+            <span>{isSubmitting ? 'Creating account...' : 'Continue'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

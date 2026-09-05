@@ -5,6 +5,7 @@ import SignupPage from './features/auth/pages/SignupPage';
 import LoginPage from './features/auth/pages/LoginPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import AppLayout from './shared/layout/AppLayout';
+import ProtectedRoute from './shared/components/ProtectedRoute';
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -43,9 +44,11 @@ export default function App() {
         <Route
           path="/dashboard"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <DashboardPage />
-            </AppLayout>
+            <ProtectedRoute>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <DashboardPage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

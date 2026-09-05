@@ -6,10 +6,14 @@ import AuthBrandPanel from '../components/AuthBrandPanel';
 import OrganizationForm from '../components/OrganizationForm';
 import AdminForm from '../components/AdminForm';
 import SignupSuccess from '../components/SignupSuccess';
+import { useAuthStore } from '../../../store/useAuthStore';
 
 export default function SignupPage({ isDarkMode, toggleDarkMode }) {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
+  const { register } = useAuthStore();
+  const [apiError, setApiError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     orgName: '',
@@ -43,9 +47,32 @@ export default function SignupPage({ isDarkMode, toggleDarkMode }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleStep2Continue = () => {
-    setStep(3);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleStep2Continue = async () => {
+    try {
+      setApiError(null);
+      setIsSubmitting(true);
+      
+      const payload = {
+        org_name: formData.orgName,
+        org_code: formData.orgCode,
+        org_email: formData.workEmail,
+        phone: formData.phone || formData.adminPhone,
+        currency: formData.currency,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        country: formData.country,
+        address: formData.address,
+        admin_email: formData.adminEmail,
+        password: formData.password,
+      };
+
+      await register(payload);
+      setStep(3);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      setApiError(err.response?.data?.detail || 'Failed to register. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleGoToLogin = () => {
@@ -128,6 +155,8 @@ export default function SignupPage({ isDarkMode, toggleDarkMode }) {
                 updateFormData={updateFormData}
                 onContinue={handleStep2Continue}
                 onStepClick={handleStepClick}
+                apiError={apiError}
+                isSubmitting={isSubmitting}
               />
             )}
 
