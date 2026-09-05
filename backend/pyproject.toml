@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fastapi-production-starter"
+version = "1.0.0"
+description = "Production Ready FastAPI Backend Starter with Clean Architecture, Auth, and DB"
+authors = [{ name = "Backend Developer" }]
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-v --tb=short"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["."]
