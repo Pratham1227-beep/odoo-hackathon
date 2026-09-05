@@ -232,6 +232,7 @@ export default function AddEmployeeModal({
               <option value="HR_PAYROLL_USER">HR Payroll User</option>
               <option value="HR_PAYROLL_MANAGER">HR Payroll Manager</option>
               <option value="ADMIN">Admin</option>
+              <option value="ADMIN">Intern</option>
             </select>
             <p className="text-[10px] text-slate-500 mt-1">This will automatically provision a system login account with temporary credentials.</p>
           </div>

@@ -18,14 +18,18 @@ import {
   CalendarDays,
   Bell,
   ShieldCheck,
+  GraduationCap,
 } from 'lucide-react';
+
 import WageWiseLogo from '../components/WageWiseLogo';
 import { useAuthStore } from '../../store/useAuthStore';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
   { name: 'Employees', path: '/employees', icon: Users, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
+  { name: 'Interns', path: '/interns', icon: GraduationCap, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
   { name: 'Contracts', path: '/contracts', icon: Briefcase, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER'] },
+
   { name: 'Attendance', path: '/attendance', icon: Clock },
   { name: 'Time Off', path: '/time-off', icon: Calendar },
   { name: 'Leave Request', path: '/leave-request', icon: FileText },

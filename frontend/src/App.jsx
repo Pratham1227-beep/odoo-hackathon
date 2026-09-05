@@ -21,7 +21,10 @@ import NotificationsPage from './features/notifications/pages/NotificationsPage'
 import ReportsPage from './features/reports/pages/ReportsPage';
 import SettingsPage from './features/settings/pages/SettingsPage';
 import AdminProfilePage from './features/adminProfile/pages/AdminProfilePage';
+import InternsPage from './features/interns/pages/InternsPage';
+import InternProfilePage from './features/interns/pages/InternProfilePage';
 import AppLayout from './shared/layout/AppLayout';
+
 import ProtectedRoute from './shared/components/ProtectedRoute';
 
 export default function App() {
@@ -94,6 +97,25 @@ export default function App() {
             </AppLayout>
           }
         />
+        <Route
+          path="/interns"
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER']}>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <InternsPage />
+              </AppLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/interns/:id"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <InternProfilePage />
+            </AppLayout>
+          }
+        />
+
         <Route
           path="/attendance"
           element={
