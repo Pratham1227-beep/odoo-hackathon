@@ -64,3 +64,43 @@ class DocumentType(str, Enum):
     EXPERIENCE_LETTER = "EXPERIENCE_LETTER"
     TAX_FORM = "TAX_FORM"
     OTHER = "OTHER"
+
+
+class SalaryRuleCategory(str, Enum):
+    BASIC = "BASIC"
+    ALLOWANCE = "ALLOWANCE"
+    GROSS = "GROSS"
+    DEDUCTION = "DEDUCTION"
+    NET = "NET"
+
+
+class CalculationType(str, Enum):
+    FIXED = "FIXED"
+    PERCENTAGE = "PERCENTAGE"
+    FORMULA = "FORMULA"
+
+
+class SalaryComponentValueType(str, Enum):
+    FIXED = "FIXED"
+    PERCENTAGE = "PERCENTAGE"
+
+
+class ContractType(str, Enum):
+    PERMANENT = "PERMANENT"
+    FIXED_TERM = "FIXED_TERM"
+    PROBATION = "PROBATION"
+    CONTRACTOR = "CONTRACTOR"
+
+
+class WageType(str, Enum):
+    MONTHLY = "MONTHLY"
+    DAILY = "DAILY"
+    HOURLY = "HOURLY"
+
+
+class ContractStatus(str, Enum):
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    EXPIRED = "EXPIRED"
+    TERMINATED = "TERMINATED"
+
