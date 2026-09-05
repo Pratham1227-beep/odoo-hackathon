@@ -376,7 +376,14 @@ export default function PayrunPage() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+            <button
+              type="button"
+              onClick={() => navigate('/payrun/processing')}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl shadow-2xs transition-colors cursor-pointer"
+            >
+              Open Validation Screen →
+            </button>
             <button
               type="button"
               onClick={() => setIsWarningsOpen(true)}
