@@ -14,6 +14,7 @@ import PayrunPage from './features/payrun/pages/PayrunPage';
 import PayrunProcessingPage from './features/payrun/pages/PayrunProcessingPage';
 import PayslipViewPage from './features/payrun/pages/PayslipViewPage';
 import PayrollPage from './features/payroll/pages/PayrollPage';
+import WorkingSchedulesPage from './features/workingSchedules/pages/WorkingSchedulesPage';
 import AppLayout from './shared/layout/AppLayout';
 import ProtectedRoute from './shared/components/ProtectedRoute';
 
@@ -210,6 +211,22 @@ export default function App() {
           element={
             <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
               <PayslipViewPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/working-schedules"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <WorkingSchedulesPage />
+            </AppLayout>
+          }
+        />
+        <Route
+          path="/workforce/working-schedules"
+          element={
+            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+              <WorkingSchedulesPage />
             </AppLayout>
           }
         />
