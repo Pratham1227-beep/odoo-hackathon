@@ -25,6 +25,7 @@ export default function AddEmployeeModal({
       year: 'numeric',
     }),
     phone: '',
+    user_role: 'EMPLOYEE',
   });
 
   const [errors, setErrors] = useState({});
@@ -40,6 +41,7 @@ export default function AddEmployeeModal({
         status: employeeToEdit.status || 'Active',
         joinDate: employeeToEdit.joinDate || '',
         phone: employeeToEdit.phone || '',
+        user_role: employeeToEdit.user_role || 'EMPLOYEE',
       });
     } else {
       setFormData({
@@ -55,6 +57,7 @@ export default function AddEmployeeModal({
           year: 'numeric',
         }),
         phone: '',
+        user_role: 'EMPLOYEE',
       });
     }
     setErrors({});
@@ -212,6 +215,25 @@ export default function AddEmployeeModal({
               </div>
               {errors.role && <p className="text-xs text-red-500 mt-1">{errors.role}</p>}
             </div>
+          </div>
+          
+          {/* System Role */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              System Access Role <span className="text-indigo-600">*</span>
+            </label>
+            <select
+              value={formData.user_role}
+              onChange={(e) => setFormData({ ...formData, user_role: e.target.value })}
+              className="w-full px-3 py-2 text-sm bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 cursor-pointer"
+            >
+              <option value="EMPLOYEE">Employee</option>
+              <option value="HR_MANAGER">HR Manager</option>
+              <option value="HR_PAYROLL_USER">HR Payroll User</option>
+              <option value="HR_PAYROLL_MANAGER">HR Payroll Manager</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+            <p className="text-[10px] text-slate-500 mt-1">This will automatically provision a system login account with temporary credentials.</p>
           </div>
 
           {/* Employment Type & Status */}
