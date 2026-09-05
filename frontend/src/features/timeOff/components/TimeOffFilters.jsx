@@ -1,36 +1,33 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, X, RotateCcw } from 'lucide-react';
-import {
-  leaveTypeFilterOptions,
-  statusFilterOptions,
-  departmentFilterOptions,
-} from '../data/timeOffData';
 
 export default function TimeOffFilters({
   activeTab = 'All',
   onTabChange,
-  counts = { all: 65, pending: 12, approved: 48, rejected: 5, cancelled: 0 },
+  counts = { all: 0, pending: 0, approved: 0, rejected: 0, cancelled: 0 },
   searchQuery = '',
   onSearchChange,
   filters = {},
   onFilterChange,
   onResetFilters,
+  leaveTypes = [],
 }) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterPopoverRef = useRef(null);
 
   const tabs = [
-    { id: 'All', label: `All Requests (${counts.all})` },
-    { id: 'Pending', label: `Pending (${counts.pending})` },
-    { id: 'Approved', label: `Approved (${counts.approved})` },
-    { id: 'Rejected', label: `Rejected (${counts.rejected})` },
-    { id: 'Cancelled', label: `Cancelled (${counts.cancelled})` },
+    { id: 'All', label: `All Requests (${counts.all || 0})` },
+    { id: 'PENDING', label: `Pending (${counts.pending || 0})` },
+    { id: 'APPROVED', label: `Approved (${counts.approved || 0})` },
+    { id: 'REJECTED', label: `Rejected (${counts.rejected || 0})` },
   ];
+
+  const leaveTypeFilterOptions = ['All Types', ...leaveTypes.map(lt => lt.name)];
+  const statusFilterOptions = ['All Statuses', 'PENDING', 'APPROVED', 'REJECTED'];
 
   const hasAdvancedFilters =
     (filters.leaveType && filters.leaveType !== 'All Types') ||
     (filters.status && filters.status !== 'All Statuses') ||
-    (filters.department && filters.department !== 'All Departments') ||
     filters.startDate ||
     filters.endDate;
 
@@ -47,6 +44,11 @@ export default function TimeOffFilters({
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isFilterOpen]);
+
+  const capitalizeStatus = (status) => {
+    if (status === 'All Statuses') return status;
+    return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  };
 
   return (
     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-3">
@@ -162,25 +164,7 @@ export default function TimeOffFilters({
                 >
                   {statusFilterOptions.map((st) => (
                     <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Department */}
-              <div className="space-y-1">
-                <label className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  Department
-                </label>
-                <select
-                  value={filters.department || 'All Departments'}
-                  onChange={(e) => onFilterChange('department', e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  {departmentFilterOptions.map((dep) => (
-                    <option key={dep} value={dep}>
-                      {dep}
+                      {capitalizeStatus(st)}
                     </option>
                   ))}
                 </select>

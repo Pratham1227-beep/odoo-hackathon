@@ -20,6 +20,7 @@ from app.features.attendance.schemas import (
     AttendanceResponse,
     AttendanceSummaryResponse,
     AttendanceUpdate,
+    AttendanceUpsert,
     HolidayCreate,
     HolidayResponse,
     HolidayUpdate,
@@ -240,6 +241,83 @@ class AttendanceService:
     # ==========================================
     # Direct Correction & Attendance Queries
     # ==========================================
+
+    @classmethod
+    async def upsert_attendance(
+        cls,
+        db: AsyncSession,
+        org_id: uuid.UUID,
+        payload: AttendanceUpsert,
+        current_user: User,
+    ) -> Attendance:
+        """HR/Admin create or update an attendance record for an employee on a date."""
+        emp_stmt = select(Employee).where(
+            Employee.id == payload.employee_id,
+            Employee.organization_id == org_id,
+        )
+        emp_res = await db.execute(emp_stmt)
+        employee = emp_res.scalar_one_or_none()
+        if not employee:
+            raise NotFoundError("Employee not found")
+
+        stmt = select(Attendance).where(
+            Attendance.organization_id == org_id,
+            Attendance.employee_id == payload.employee_id,
+            Attendance.date == payload.date,
+        )
+        res = await db.execute(stmt)
+        attendance = res.scalar_one_or_none()
+
+        if not attendance:
+            attendance = Attendance(
+                organization_id=org_id,
+                employee_id=payload.employee_id,
+                date=payload.date,
+                source=AttendanceSource.MANUAL,
+                updated_by_id=current_user.id,
+            )
+            db.add(attendance)
+
+        if payload.clock_in is not None:
+            attendance.clock_in = payload.clock_in
+        if payload.clock_out is not None:
+            attendance.clock_out = payload.clock_out
+        if payload.status is not None:
+            attendance.status = payload.status
+
+        if attendance.clock_in and attendance.clock_out:
+            start_time, hours_per_day, break_minutes = cls._get_working_schedule_params(employee)
+            late_grace = await cls._get_late_grace_minutes(db, org_id)
+            org_tz = (
+                current_user.organization.timezone
+                if current_user.organization and current_user.organization.timezone
+                else "Asia/Kolkata"
+            )
+            work_hrs, ot_hrs, calc_status = cls._compute_hours_and_status(
+                clock_in=attendance.clock_in,
+                clock_out=attendance.clock_out,
+                start_time=start_time,
+                hours_per_day=hours_per_day,
+                break_minutes=break_minutes,
+                late_grace_minutes=late_grace,
+                org_tz_name=org_tz,
+            )
+            attendance.work_hours = work_hrs
+            attendance.overtime_hours = ot_hrs
+            if payload.status is None:
+                attendance.status = calc_status
+        elif payload.status in (AttendanceStatus.ABSENT, AttendanceStatus.HOLIDAY):
+            attendance.clock_in = None
+            attendance.clock_out = None
+            attendance.work_hours = None
+            attendance.overtime_hours = Decimal("0.00")
+
+        attendance.source = AttendanceSource.MANUAL
+        attendance.updated_by_id = current_user.id
+
+        await db.commit()
+        await db.refresh(attendance)
+        return attendance
 
     @classmethod
     async def direct_correction(

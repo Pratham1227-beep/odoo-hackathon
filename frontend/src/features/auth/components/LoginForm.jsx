@@ -73,10 +73,10 @@ export default function LoginForm({ onSubmit, apiError }) {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Structured for future OAuth integration
-    console.log('Google login triggered');
-  };
+  // const handleGoogleLogin = () => {
+  //   // Structured for future OAuth integration
+  //   console.log('Google login triggered');
+  // };
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200/90 dark:border-slate-800 shadow-xl dark:shadow-2xl transition-all duration-200 w-full max-w-xl mx-auto">
@@ -226,7 +226,7 @@ export default function LoginForm({ onSubmit, apiError }) {
         </div>
 
         {/* Google Login Button */}
-        <div>
+        {/* <div>
           <button
             type="button"
             onClick={handleGoogleLogin}
@@ -235,7 +235,7 @@ export default function LoginForm({ onSubmit, apiError }) {
             <GoogleIcon className="w-4 h-4" />
             <span>Continue with Google</span>
           </button>
-        </div>
+        </div> */}
 
         {/* Secure Login Info Notice */}
         <div className="p-3.5 sm:p-4 rounded-2xl bg-teal-50/70 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900/50 flex items-center gap-3.5 mt-4">

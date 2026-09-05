@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import logging
 from typing import Any, Dict, List, Optional, Sequence, Tuple

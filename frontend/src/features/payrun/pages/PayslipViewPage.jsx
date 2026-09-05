@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useParams, useLocation, Link } from 'react-router-dom';
 import {
   Download,
   Send,
@@ -19,6 +19,12 @@ import PayslipDetails from '../components/PayslipDetails';
 import PayslipHistory from '../components/PayslipHistory';
 import SendPayslipModal from '../components/SendPayslipModal';
 
+import { payrollService } from '../../payroll/services/payrollService';
+import {
+  mapPayslipDetailToUi,
+  mapPayslipListItem,
+} from '../../payroll/utils/payrollMappers';
+
 import {
   getEmployeePayslip,
   payslipMonths,
@@ -27,6 +33,10 @@ import {
 
 export default function PayslipViewPage() {
   const { employeeId = 'EMP001' } = useParams();
+  const location = useLocation();
+
+  const queryParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const urlPayslipId = queryParams.get('payslipId');
 
   // State
   const [selectedMonth, setSelectedMonth] = useState('September 2026');
@@ -34,6 +44,10 @@ export default function PayslipViewPage() {
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Backend loaded payslip and month list
+  const [apiPayslip, setApiPayslip] = useState(null);
+  const [availableMonths, setAvailableMonths] = useState(payslipMonths);
 
   const printRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -46,7 +60,7 @@ export default function PayslipViewPage() {
   };
 
   // Close dropdown on outside click
-  React.useEffect(() => {
+  useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsMonthDropdownOpen(false);
@@ -56,12 +70,54 @@ export default function PayslipViewPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch / Compute current payslip data
+  // Fetch real payslip from Backend API if available
+  const loadPayslipFromApi = useCallback(async () => {
+    try {
+      if (urlPayslipId && urlPayslipId.includes('-')) {
+        const detail = await payrollService.getPayslip(urlPayslipId);
+        if (detail) {
+          setApiPayslip(mapPayslipDetailToUi(detail));
+          return;
+        }
+      }
+
+      // Query payslips list for this employee if employeeId looks like a UUID or query all
+      const params = {};
+      if (employeeId && employeeId.includes('-')) {
+        params.employee_id = employeeId;
+      }
+
+      const listRes = await payrollService.listPayslips(params);
+      const items = listRes?.items || [];
+
+      if (items.length > 0) {
+        const mappedList = items.map((p) => mapPayslipListItem(p));
+        setAvailableMonths(mappedList);
+
+        // Fetch detail of the first or matching payslip
+        const target = items[0];
+        const detail = await payrollService.getPayslip(target.id);
+        if (detail) {
+          setApiPayslip(mapPayslipDetailToUi(detail));
+        }
+      }
+    } catch (err) {
+      console.warn('Payslip API fetch fallback note:', err.message);
+    }
+  }, [employeeId, urlPayslipId]);
+
+  useEffect(() => {
+    loadPayslipFromApi();
+  }, [loadPayslipFromApi]);
+
+  // Derived payslip data (combines backend api data or client mock fallback)
   const payslip = useMemo(() => {
+    if (apiPayslip) return apiPayslip;
     return getEmployeePayslip(employeeId, selectedMonth);
-  }, [employeeId, selectedMonth]);
+  }, [apiPayslip, employeeId, selectedMonth]);
 
   const netPay = useMemo(() => {
+    if (payslip.netSalary) return payslip.netSalary;
     return calculateNetPay(payslip.earnings, payslip.deductions);
   }, [payslip]);
 
@@ -70,16 +126,37 @@ export default function PayslipViewPage() {
     window.print();
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     setIsDownloading(true);
     showToast('Preparing PDF payslip document...');
+
+    const payslipUuid = payslip.raw?.id || (payslip.id?.includes('-') ? payslip.id : null);
+
+    if (payslipUuid) {
+      try {
+        const { blob, filename } = await payrollService.downloadPayslipPdf(payslipUuid);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = filename || `WageWise_Payslip_${payslipUuid.slice(0, 8)}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        setIsDownloading(false);
+        showToast(`Official PDF payslip downloaded: ${link.download}`);
+        return;
+      } catch (err) {
+        console.warn('Backend PDF download fallback:', err.message);
+      }
+    }
+
+    // Client fallback PDF generation
     setTimeout(() => {
       setIsDownloading(false);
       const safeName = (payslip.employee?.name || 'Employee').replace(/\s+/g, '_');
       const safeMonth = selectedMonth.replace(/\s+/g, '_');
       const filename = `WageWise_${safeName}_${safeMonth}_Payslip.pdf`;
 
-      // Trigger dummy download file
       const blob = new Blob([
         `WageWise Official Payslip\nEmployee: ${payslip.employee?.name}\nPeriod: ${selectedMonth}\nNet Pay: ₹${netPay.toLocaleString('en-IN')}`
       ], { type: 'application/pdf' });
@@ -91,7 +168,7 @@ export default function PayslipViewPage() {
       document.body.removeChild(link);
 
       showToast(`Payslip downloaded successfully: ${filename}`);
-    }, 900);
+    }, 800);
   };
 
   const handleConfirmSendEmail = (email) => {
@@ -171,23 +248,31 @@ export default function PayslipViewPage() {
                 <div className="px-3 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                   Available Payslips
                 </div>
-                {payslipMonths.map((m) => (
+                {availableMonths.map((m) => (
                   <button
                     key={m.id}
-                    onClick={() => {
-                      setSelectedMonth(m.label);
+                    onClick={async () => {
+                      setSelectedMonth(m.periodLabel || m.label);
                       setIsMonthDropdownOpen(false);
-                      showToast(`Loaded payslip for ${m.label}`);
+                      if (m.raw?.id) {
+                        try {
+                          const d = await payrollService.getPayslip(m.raw.id);
+                          if (d) setApiPayslip(mapPayslipDetailToUi(d));
+                        } catch (e) {
+                          // keep
+                        }
+                      }
+                      showToast(`Loaded payslip for ${m.periodLabel || m.label}`);
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 text-left cursor-pointer transition-colors ${
-                      selectedMonth === m.label
+                      selectedMonth === (m.periodLabel || m.label)
                         ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-bold'
                         : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                     }`}
                   >
-                    <span>{m.label}</span>
-                    {selectedMonth === m.label && (
-                      <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <span className="truncate">{m.periodLabel || m.label}</span>
+                    {selectedMonth === (m.periodLabel || m.label) && (
+                      <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
                     )}
                   </button>
                 ))}
@@ -203,7 +288,7 @@ export default function PayslipViewPage() {
             className="flex items-center gap-1.5 px-4 py-2.5 bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-900/60 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 text-xs sm:text-sm font-semibold rounded-xl shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
           >
             <Download className="w-4 h-4" />
-            <span>Download PDF</span>
+            <span>{isDownloading ? 'Downloading...' : 'Download PDF'}</span>
           </button>
 
           {/* Send Payslip CTA Button */}

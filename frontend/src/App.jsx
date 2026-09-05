@@ -86,9 +86,11 @@ export default function App() {
         <Route
           path="/attendance"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <AttendancePage />
-            </AppLayout>
+            <ProtectedRoute>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <AttendancePage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route

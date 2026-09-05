@@ -1,8 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Coins, PlayCircle, Landmark, ShieldAlert, TrendingUp, AlertTriangle } from 'lucide-react';
 import { payrollKPIs } from '../data/payrollData';
+import { payrollService } from '../services/payrollService';
+import { mapDashboardToKpis } from '../utils/payrollMappers';
 
 export default function PayrollKPIs() {
+  const [kpis, setKpis] = useState(payrollKPIs);
+
+  useEffect(() => {
+    const fetchKPIs = async () => {
+      try {
+        const dashboard = await payrollService.getDashboard();
+        if (dashboard) {
+          const mapped = mapDashboardToKpis(dashboard);
+          if (mapped && mapped.length > 0) {
+            setKpis(mapped);
+          }
+        }
+      } catch (err) {
+        // Retain initial fallback KPIs
+        console.warn('Dashboard KPIs fallback note:', err.message);
+      }
+    };
+
+    fetchKPIs();
+  }, []);
+
   const iconMap = {
     Coins: Coins,
     PlayCircle: PlayCircle,
@@ -31,7 +54,7 @@ export default function PayrollKPIs() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {payrollKPIs.map((kpi) => {
+      {kpis.map((kpi) => {
         const IconComponent = iconMap[kpi.icon] || Coins;
         const styles = themeStyles[kpi.theme] || themeStyles.purple;
 

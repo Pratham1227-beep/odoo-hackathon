@@ -514,6 +514,8 @@ export const statusFilterOptions = [
   'Absent',
   'On Leave',
   'Late',
+  'Half Day',
+  'Holiday',
 ];
 
 export const workLocationFilterOptions = [
@@ -527,8 +529,6 @@ export const workLocationFilterOptions = [
 export const attendanceTypeFilterOptions = [
   'All Types',
   'Regular',
-  'Shift A',
-  'Approved Leave',
+  'Manual',
   'Unscheduled',
-  'Overtime',
 ];

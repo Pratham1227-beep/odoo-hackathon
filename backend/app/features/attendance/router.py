@@ -13,6 +13,7 @@ from app.features.attendance.schemas import (
     AttendanceResponse,
     AttendanceSummaryResponse,
     AttendanceUpdate,
+    AttendanceUpsert,
     HolidayCreate,
     HolidayResponse,
     HolidayUpdate,
@@ -164,6 +165,22 @@ async def direct_correction(
 ):
     return await AttendanceService.direct_correction(
         db, current_user.organization_id, attendance_id, payload, current_user
+    )
+
+
+@attendance_router.post(
+    "",
+    response_model=AttendanceResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create or update attendance for an employee on a date (HR access)",
+)
+async def upsert_attendance(
+    payload: AttendanceUpsert,
+    current_user: User = Depends(require_role(*HR_ROLES)),
+    db: AsyncSession = Depends(get_db),
+):
+    return await AttendanceService.upsert_attendance(
+        db, current_user.organization_id, payload, current_user
     )
 
 

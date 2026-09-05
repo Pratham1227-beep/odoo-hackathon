@@ -1,21 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, X, Check, RotateCcw } from 'lucide-react';
 import {
-  departmentFilterOptions,
   statusFilterOptions,
-  workLocationFilterOptions,
   attendanceTypeFilterOptions,
 } from '../data/attendanceData';
+
+const DEFAULT_STATUS_OPTIONS = [
+  'All Statuses',
+  'Present',
+  'Absent',
+  'Late',
+  'Half Day',
+  'Holiday',
+  'On Leave',
+];
 
 export default function AttendanceFilterTabs({
   activeTab = 'All',
   onTabChange,
-  counts = { all: 118, present: 92, absent: 14, leave: 12, late: 6 },
+  counts = { all: 0, present: 0, absent: 0, leave: 0, late: 0 },
   searchQuery = '',
   onSearchChange,
   filters = {},
   onFilterChange,
   onResetFilters,
+  departmentOptions = ['All Departments'],
+  locationOptions = ['All Locations'],
 }) {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const filterPopoverRef = useRef(null);
@@ -142,7 +152,7 @@ export default function AttendanceFilterTabs({
                   onChange={(e) => onFilterChange('department', e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
-                  {departmentFilterOptions.map((dep) => (
+                  {departmentOptions.map((dep) => (
                     <option key={dep} value={dep}>
                       {dep}
                     </option>
@@ -160,7 +170,10 @@ export default function AttendanceFilterTabs({
                   onChange={(e) => onFilterChange('status', e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
-                  {statusFilterOptions.map((st) => (
+                  {(statusFilterOptions?.length
+                    ? statusFilterOptions
+                    : DEFAULT_STATUS_OPTIONS
+                  ).map((st) => (
                     <option key={st} value={st}>
                       {st}
                     </option>
@@ -178,7 +191,7 @@ export default function AttendanceFilterTabs({
                   onChange={(e) => onFilterChange('workLocation', e.target.value)}
                   className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
-                  {workLocationFilterOptions.map((loc) => (
+                  {locationOptions.map((loc) => (
                     <option key={loc} value={loc}>
                       {loc}
                     </option>

@@ -23,6 +23,15 @@ class AttendanceUpdate(BaseSchema):
     status: Optional[AttendanceStatus] = None
 
 
+class AttendanceUpsert(BaseSchema):
+    """HR/Admin create-or-update attendance for an employee on a given date."""
+    employee_id: uuid.UUID
+    date: date
+    clock_in: Optional[datetime] = None
+    clock_out: Optional[datetime] = None
+    status: Optional[AttendanceStatus] = None
+
+
 class AttendanceResponse(IDSchema, TimestampSchema):
     organization_id: uuid.UUID
     employee_id: uuid.UUID

@@ -27,8 +27,9 @@ const navItems = [
   { name: 'Attendance', path: '/attendance', icon: Clock },
   { name: 'Time Off', path: '/time-off', icon: Calendar },
   { name: 'Leave Request', path: '/leave-request', icon: FileText },
-  { name: 'Payroll', path: '/payroll', icon: Coins, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
-  { name: 'Salary Setup', path: '/salary-setup', icon: SlidersHorizontal, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
+  { name: 'Payroll', path: '/payroll', icon: Coins, allowedRoles: ['ADMIN', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
+  { name: 'Salary Setup', path: '/salary-setup', icon: SlidersHorizontal, allowedRoles: ['ADMIN', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
+  { name: 'Payslips', path: '/payslips', icon: Receipt },
   { name: 'Reports', path: '/reports', icon: BarChart3, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER'] },
   { name: 'Settings', path: '/settings', icon: Settings, allowedRoles: ['ADMIN', 'HR_MANAGER'] },
 ];

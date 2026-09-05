@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FileSpreadsheet,
@@ -10,13 +10,36 @@ import {
   Users,
 } from 'lucide-react';
 import { recentBatches } from '../data/payrollData';
+import { payrollService } from '../services/payrollService';
+import { mapPayrunToBatch } from '../utils/payrollMappers';
 
 export default function RecentPayrollBatches() {
+  const [batches, setBatches] = useState(recentBatches);
   const [downloadedId, setDownloadedId] = useState(null);
+
+  useEffect(() => {
+    const fetchBatches = async () => {
+      try {
+        const response = await payrollService.listPayruns({ page: 1, page_size: 10 });
+        const items = response?.items || [];
+        if (items.length > 0) {
+          const mapped = items.map((p) => mapPayrunToBatch(p));
+          setBatches(mapped);
+        }
+      } catch (err) {
+        // Retain initial fallback batches
+        console.warn('Recent batches API fallback note:', err.message);
+      }
+    };
+
+    fetchBatches();
+  }, []);
 
   const handleDownloadSummary = (id) => {
     setDownloadedId(id);
-    const batch = recentBatches.find((b) => b.id === id);
+    const batch = batches.find((b) => b.id === id);
+    if (!batch) return;
+
     const content = `Batch ID: ${batch.id}\nPeriod: ${batch.period}\nEmployees: ${batch.employeesCount}\nGross Payout: ${batch.grossPayout}\nNet Payout: ${batch.netPayout}\nStatus: ${batch.status}\nPay Date: ${batch.payDate}\n`;
     const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -65,7 +88,7 @@ export default function RecentPayrollBatches() {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-            {recentBatches.map((batch) => (
+            {batches.map((batch) => (
               <tr
                 key={batch.id}
                 className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors group"

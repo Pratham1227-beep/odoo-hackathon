@@ -1,24 +1,46 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Calendar, ChevronDown, Plus, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Calendar, ChevronDown, Plus, Check, LogIn, LogOut, Loader2 } from 'lucide-react';
+import { formatDateISO } from '../utils/attendanceMappers';
 
-export const quickDates = [
-  { label: 'Thu, 12 Sep 2026 (Selected)', value: '2026-09-12' },
-  { label: 'Wed, 11 Sep 2026', value: '2026-09-11' },
-  { label: 'Tue, 10 Sep 2026', value: '2026-09-10' },
-  { label: 'Mon, 09 Sep 2026', value: '2026-09-09' },
-  { label: 'Fri, 06 Sep 2026', value: '2026-09-06' },
-  { label: 'Thu, 05 Sep 2026', value: '2026-09-05' },
-];
+function buildQuickDates(selectedDate) {
+  const base = new Date();
+  const dates = [];
+  for (let i = 0; i < 7; i += 1) {
+    const d = new Date(base);
+    d.setDate(base.getDate() - i);
+    const value = formatDateISO(d);
+    const label = d.toLocaleDateString('en-US', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+    dates.push({
+      label: value === selectedDate ? `${label} (Selected)` : label,
+      value,
+    });
+  }
+  return dates;
+}
 
 export default function AttendanceHeader({
-  selectedDate = '2026-09-12',
+  selectedDate,
   onSelectDate,
   onOpenMarkModal,
+  isHr = false,
+  isToday = true,
+  onClockIn,
+  onClockOut,
+  clockInDisabled = false,
+  clockOutDisabled = false,
+  showSelfClock = true,
+  roleLabel = '',
+  actionLoading = false,
 }) {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const quickDates = useMemo(() => buildQuickDates(selectedDate), [selectedDate]);
 
-  // Format display string e.g. "Thu, 12 Sep 2026"
   const formatDisplayDate = (isoDateStr) => {
     try {
       const [year, month, day] = isoDateStr.split('-').map(Number);
@@ -30,7 +52,7 @@ export default function AttendanceHeader({
         year: 'numeric',
       });
     } catch {
-      return 'Thu, 12 Sep 2026';
+      return isoDateStr;
     }
   };
 
@@ -50,19 +72,18 @@ export default function AttendanceHeader({
 
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-      {/* Title & Subtitle */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
           Attendance
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Track employee attendance and manage work hours efficiently.
+          {isHr
+            ? `Org-wide attendance for ${roleLabel.toLowerCase()} — view and manage employee records.`
+            : 'Your attendance — clock in/out and review your daily records.'}
         </p>
       </div>
 
-      {/* Date Selector & Primary Action */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* Date Selector Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button
             onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
@@ -71,10 +92,13 @@ export default function AttendanceHeader({
           >
             <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400" />
             <span>{formatDisplayDate(selectedDate)}</span>
-            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isDatePickerOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-4 h-4 text-slate-400 transition-transform ${
+                isDatePickerOpen ? 'rotate-180' : ''
+              }`}
+            />
           </button>
 
-          {/* Quick Date Picker Popover */}
           {isDatePickerOpen && (
             <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800 p-2 z-50 animate-in fade-in zoom-in-95 duration-100">
               <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800/80 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
@@ -97,13 +121,14 @@ export default function AttendanceHeader({
                       }`}
                     >
                       <span>{item.label}</span>
-                      {isSelected && <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />}
+                      {isSelected && (
+                        <Check className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                      )}
                     </button>
                   );
                 })}
               </div>
 
-              {/* Custom Date Input */}
               <div className="pt-2 mt-1 border-t border-slate-100 dark:border-slate-800/80 px-2 pb-1">
                 <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1.5">
                   Custom Date:
@@ -124,14 +149,44 @@ export default function AttendanceHeader({
           )}
         </div>
 
-        {/* Primary Action: Mark Attendance Button */}
-        <button
-          onClick={onOpenMarkModal}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-500/25 transition-all cursor-pointer hover:scale-[1.01]"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Mark Attendance</span>
-        </button>
+        {showSelfClock && isToday && (
+          <>
+            <button
+              onClick={onClockIn}
+              disabled={clockInDisabled}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-md shadow-emerald-500/20 transition-all cursor-pointer"
+            >
+              {actionLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <LogIn className="w-4 h-4" />
+              )}
+              <span>Clock In</span>
+            </button>
+            <button
+              onClick={onClockOut}
+              disabled={clockOutDisabled}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-900 dark:bg-slate-100 dark:hover:bg-white dark:text-slate-900 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs sm:text-sm font-bold shadow-md transition-all cursor-pointer"
+            >
+              {actionLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <LogOut className="w-4 h-4" />
+              )}
+              <span>Clock Out</span>
+            </button>
+          </>
+        )}
+
+        {isHr && (
+          <button
+            onClick={onOpenMarkModal}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white text-xs sm:text-sm font-bold shadow-md shadow-indigo-500/25 transition-all cursor-pointer hover:scale-[1.01]"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Mark Attendance</span>
+          </button>
+        )}
       </div>
     </div>
   );

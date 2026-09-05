@@ -12,7 +12,6 @@ import {
   Calendar,
 } from 'lucide-react';
 import TimeOffRowActions from './TimeOffRowActions';
-import { mockEmployees } from '../data/timeOffData';
 
 const avatarThemeClasses = {
   purple: 'bg-indigo-100/90 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300',
@@ -26,13 +25,13 @@ const avatarThemeClasses = {
 };
 
 const statusBadgeClasses = {
-  Pending:
+  PENDING:
     'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400 border-amber-100/90 dark:border-amber-800/60',
-  Approved:
+  APPROVED:
     'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 border-emerald-100/90 dark:border-emerald-800/60',
-  Rejected:
+  REJECTED:
     'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 border-rose-100/90 dark:border-rose-800/60',
-  Cancelled:
+  CANCELLED:
     'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700',
 };
 
@@ -60,6 +59,20 @@ const renderLeaveTypeIcon = (type) => {
   }
 };
 
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = date.toLocaleString('default', { month: 'short' });
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+const capitalizeStatus = (status) => {
+  if (!status) return '';
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+};
+
 export default function TimeOffTable({
   requests = [],
   selectedIds = [],
@@ -70,6 +83,7 @@ export default function TimeOffTable({
   onReject,
   onEdit,
   onCancel,
+  isHR = false,
 }) {
   const navigate = useNavigate();
   const allSelected = requests.length > 0 && selectedIds.length === requests.length;
@@ -120,19 +134,28 @@ export default function TimeOffTable({
           {requests.map((req) => {
             const isSelected = selectedIds.includes(req.id);
             const statusClass =
-              statusBadgeClasses[req.status] || statusBadgeClasses.Pending;
+              statusBadgeClasses[req.status] || statusBadgeClasses.PENDING;
 
-            // Match employee metadata (avatar image / initials)
-            const empMeta = mockEmployees.find((e) => e.id === req.employeeId);
-            const avatarTheme = empMeta?.avatarTheme || 'purple';
-            const initials =
-              empMeta?.initials ||
-              req.employeeName
-                .split(' ')
-                .map((n) => n[0])
-                .join('')
-                .slice(0, 2);
-            const avatarImg = empMeta?.avatar;
+            // Generate initials
+            const initials = req.employee_name
+              ? req.employee_name
+                  .split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .slice(0, 2)
+                  .toUpperCase()
+              : '';
+
+            // Generate deterministic theme based on employee_id
+            const themeKeys = Object.keys(avatarThemeClasses);
+            let themeIndex = 0;
+            if (req.employee_id) {
+              for (let i = 0; i < req.employee_id.length; i++) {
+                themeIndex += req.employee_id.charCodeAt(i);
+              }
+              themeIndex = themeIndex % themeKeys.length;
+            }
+            const avatarTheme = themeKeys[themeIndex];
 
             return (
               <tr
@@ -150,37 +173,29 @@ export default function TimeOffTable({
                     checked={isSelected}
                     onChange={() => onToggleSelect(req.id)}
                     className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-                    aria-label={`Select request for ${req.employeeName}`}
+                    aria-label={`Select request for ${req.employee_name}`}
                   />
                 </td>
 
-                {/* Employee: Photo / Initials + Name + ID */}
+                {/* Employee: Initials + Name + Code */}
                 <td className="py-3.5 pr-4 whitespace-nowrap">
                   <div
-                    onClick={() => navigate(`/employees/${req.employeeId}`)}
+                    onClick={() => navigate(`/employees/${req.employee_id}`)}
                     className="flex items-center gap-3 cursor-pointer group-hover:opacity-90"
                   >
-                    {avatarImg ? (
-                      <img
-                        src={avatarImg}
-                        alt={req.employeeName}
-                        className="w-9 h-9 rounded-full object-cover shrink-0 shadow-2xs group-hover:scale-105 transition-transform"
-                      />
-                    ) : (
-                      <div
-                        className={`w-9 h-9 rounded-full ${
-                          avatarThemeClasses[avatarTheme] || avatarThemeClasses.purple
-                        } flex items-center justify-center font-bold text-xs shrink-0 select-none shadow-2xs group-hover:scale-105 transition-transform`}
-                      >
-                        {initials}
-                      </div>
-                    )}
+                    <div
+                      className={`w-9 h-9 rounded-full ${
+                        avatarThemeClasses[avatarTheme]
+                      } flex items-center justify-center font-bold text-xs shrink-0 select-none shadow-2xs group-hover:scale-105 transition-transform`}
+                    >
+                      {initials}
+                    </div>
                     <div className="flex flex-col">
                       <span className="font-bold text-slate-900 dark:text-white leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        {req.employeeName}
+                        {req.employee_name}
                       </span>
                       <span className="text-[11px] text-slate-400 dark:text-slate-500 leading-tight">
-                        {req.employeeId}
+                        {req.employee_code}
                       </span>
                     </div>
                   </div>
@@ -189,26 +204,26 @@ export default function TimeOffTable({
                 {/* Leave Type */}
                 <td className="py-3.5 pr-4 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    {renderLeaveTypeIcon(req.leaveType)}
+                    {renderLeaveTypeIcon(req.leave_type_name)}
                     <span className="text-slate-700 dark:text-slate-300 font-medium">
-                      {req.leaveType}
+                      {req.leave_type_name}
                     </span>
                   </div>
                 </td>
 
                 {/* Start Date */}
                 <td className="py-3.5 pr-4 text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                  {req.startDate}
+                  {formatDate(req.start_date)}
                 </td>
 
                 {/* End Date */}
                 <td className="py-3.5 pr-4 text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                  {req.endDate}
+                  {formatDate(req.end_date)}
                 </td>
 
                 {/* Days */}
                 <td className="py-3.5 pr-4 text-slate-700 dark:text-slate-300 font-medium whitespace-nowrap">
-                  {req.days}
+                  {parseFloat(req.days)}
                 </td>
 
                 {/* Status Badge */}
@@ -216,13 +231,13 @@ export default function TimeOffTable({
                   <span
                     className={`inline-block px-3 py-1 rounded-full text-[11px] font-semibold border ${statusClass}`}
                   >
-                    {req.status}
+                    {capitalizeStatus(req.status)}
                   </span>
                 </td>
 
                 {/* Applied On */}
                 <td className="py-3.5 pr-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                  {req.appliedOn}
+                  {formatDate(req.created_at)}
                 </td>
 
                 {/* Actions */}
@@ -234,6 +249,7 @@ export default function TimeOffTable({
                     onReject={onReject}
                     onEdit={onEdit}
                     onCancel={onCancel}
+                    isHR={isHR}
                   />
                 </td>
               </tr>

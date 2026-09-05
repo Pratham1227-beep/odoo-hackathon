@@ -11,22 +11,32 @@ import {
   AlertCircle,
   ArrowRight,
 } from 'lucide-react';
-import { mockEmployees } from '../data/timeOffData';
 
 const statusBadgeClasses = {
-  Pending:
+  PENDING:
     'bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400 border-amber-100/90 dark:border-amber-800/60',
-  Approved:
+  APPROVED:
     'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400 border-emerald-100/90 dark:border-emerald-800/60',
-  Rejected:
+  REJECTED:
     'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 border-rose-100/90 dark:border-rose-800/60',
-  Cancelled:
+  CANCELLED:
     'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700',
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+const getInitials = (name) => {
+  if (!name) return 'U';
+  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 };
 
 export default function TimeOffDetailModal({
   isOpen,
   request,
+  isHR = false,
   onClose,
   onApprove,
   onReject,
@@ -35,8 +45,14 @@ export default function TimeOffDetailModal({
 
   if (!isOpen || !request) return null;
 
-  const empMeta = mockEmployees.find((e) => e.id === request.employeeId);
-  const statusClass = statusBadgeClasses[request.status] || statusBadgeClasses.Pending;
+  const statusClass = statusBadgeClasses[request.status?.toUpperCase()] || statusBadgeClasses.PENDING;
+  
+  // Format status for display: capitalize first letter
+  const displayStatus = request.status 
+    ? request.status.charAt(0).toUpperCase() + request.status.slice(1).toLowerCase() 
+    : 'Pending';
+
+  const daysParsed = parseFloat(request.days || "0");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
@@ -45,23 +61,15 @@ export default function TimeOffDetailModal({
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-3">
-            {empMeta?.avatar ? (
-              <img
-                src={empMeta.avatar}
-                alt={request.employeeName}
-                className="w-11 h-11 rounded-full object-cover shadow-xs"
-              />
-            ) : (
-              <div className="w-11 h-11 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm flex items-center justify-center">
-                {empMeta?.initials || 'EM'}
-              </div>
-            )}
+            <div className="w-11 h-11 rounded-full bg-indigo-100 text-indigo-700 font-bold text-sm flex items-center justify-center">
+              {getInitials(request.employee_name)}
+            </div>
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                {request.employeeName}
+                {request.employee_name}
               </h3>
               <p className="text-xs text-slate-400 dark:text-slate-500">
-                {request.employeeId} • {request.department}
+                {request.employee_code}
               </p>
             </div>
           </div>
@@ -80,7 +88,7 @@ export default function TimeOffDetailModal({
             <span className="font-mono text-slate-500">{request.id}</span>
           </div>
           <span className={`px-3 py-1 rounded-full text-xs font-bold border ${statusClass}`}>
-            {request.status}
+            {displayStatus}
           </span>
         </div>
 
@@ -90,8 +98,8 @@ export default function TimeOffDetailModal({
             <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 block">
               Leave Type
             </span>
-            <span className="text-xs font-bold text-slate-900 dark:text-white mt-1 block truncate">
-              {request.leaveType}
+            <span className="text-xs font-bold text-slate-900 dark:text-white mt-1 block truncate" title={request.leave_type_name}>
+              {request.leave_type_name}
             </span>
           </div>
 
@@ -100,7 +108,7 @@ export default function TimeOffDetailModal({
               Days
             </span>
             <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mt-1 block">
-              {request.days} day{request.days > 1 ? 's' : ''}
+              {daysParsed} day{daysParsed !== 1 ? 's' : ''}
             </span>
           </div>
 
@@ -109,7 +117,7 @@ export default function TimeOffDetailModal({
               Applied On
             </span>
             <span className="text-xs font-bold text-slate-900 dark:text-white mt-1 block">
-              {request.appliedOn}
+              {formatDate(request.created_at)}
             </span>
           </div>
         </div>
@@ -119,7 +127,7 @@ export default function TimeOffDetailModal({
           <div className="flex items-center justify-between text-slate-600 dark:text-slate-400">
             <span>Period:</span>
             <span className="font-semibold text-slate-900 dark:text-white">
-              {request.startDate} to {request.endDate}
+              {formatDate(request.start_date)} to {formatDate(request.end_date)}
             </span>
           </div>
 
@@ -130,10 +138,10 @@ export default function TimeOffDetailModal({
             </div>
           )}
 
-          {request.rejectionReason && (
+          {request.review_comment && (
             <div className="p-3 rounded-2xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-900/60 text-rose-800 dark:text-rose-300">
               <span className="font-bold block text-[11px] text-rose-600 dark:text-rose-400 mb-0.5">Rejection Reason:</span>
-              <p className="text-xs leading-relaxed">{request.rejectionReason}</p>
+              <p className="text-xs leading-relaxed">{request.review_comment}</p>
             </div>
           )}
         </div>
@@ -143,7 +151,7 @@ export default function TimeOffDetailModal({
           <button
             onClick={() => {
               onClose();
-              navigate(`/employees/${request.employeeId}`);
+              navigate(`/employees/${request.employee_id}`);
             }}
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
           >
@@ -152,7 +160,7 @@ export default function TimeOffDetailModal({
           </button>
 
           <div className="flex items-center gap-2">
-            {request.status === 'Pending' && (
+            {isHR && request.status?.toUpperCase() === 'PENDING' && (
               <>
                 <button
                   onClick={() => {
@@ -174,7 +182,7 @@ export default function TimeOffDetailModal({
                 </button>
               </>
             )}
-            {request.status !== 'Pending' && (
+            {(!isHR || request.status?.toUpperCase() !== 'PENDING') && (
               <button
                 onClick={onClose}
                 className="px-4 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold cursor-pointer"
