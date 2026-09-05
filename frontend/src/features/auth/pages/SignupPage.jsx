@@ -69,7 +69,8 @@ export default function SignupPage({ isDarkMode, toggleDarkMode }) {
       setStep(3);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
-      setApiError(err.response?.data?.detail || 'Failed to register. Please try again.');
+      const errorMessage = err.response?.data?.error?.message || err.response?.data?.detail || 'Failed to register. Please try again.';
+      setApiError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }

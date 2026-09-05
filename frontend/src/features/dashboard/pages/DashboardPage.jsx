@@ -1,4 +1,6 @@
 import React from 'react';
+import { useAuthStore } from '../../../store/useAuthStore';
+import EmployeeDashboard from '../components/EmployeeDashboard';
 import DashboardHeader from '../components/DashboardHeader';
 import StatCard from '../components/StatCard';
 import PayrollOverviewChart from '../components/PayrollOverviewChart';
@@ -17,6 +19,12 @@ import {
 } from '../data/dashboardData';
 
 export default function DashboardPage() {
+  const { user } = useAuthStore();
+
+  if (user?.role === 'EMPLOYEE') {
+    return <EmployeeDashboard />;
+  }
+
   return (
     <div className="space-y-6 pb-8 animate-in fade-in duration-200">
       {/* Top Header */}

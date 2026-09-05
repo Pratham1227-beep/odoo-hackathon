@@ -15,6 +15,7 @@ import {
   SlidersHorizontal
 } from 'lucide-react';
 import WageWiseLogo from '../components/WageWiseLogo';
+import { useAuthStore } from '../../store/useAuthStore';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
@@ -22,13 +23,22 @@ const navItems = [
   { name: 'Attendance', path: '/attendance', icon: Clock },
   { name: 'Time Off', path: '/time-off', icon: Calendar },
   { name: 'Leave Request', path: '/leave-request', icon: FileText },
-  { name: 'Payroll', path: '/payroll', icon: Coins },
-  { name: 'Salary Setup', path: '/salary-setup', icon: SlidersHorizontal },
-  { name: 'Reports', path: '/reports', icon: BarChart3 },
-  { name: 'Settings', path: '/settings', icon: Settings },
+  { name: 'Payroll', path: '/payroll', icon: Coins, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
+  { name: 'Salary Setup', path: '/salary-setup', icon: SlidersHorizontal, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
+  { name: 'Reports', path: '/reports', icon: BarChart3, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER'] },
+  { name: 'Settings', path: '/settings', icon: Settings, allowedRoles: ['ADMIN', 'HR_MANAGER'] },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
+  const { user } = useAuthStore();
+
+  const filteredNavItems = navItems.filter(item => {
+    if (!item.allowedRoles) return true;
+    if (!user) return false;
+    if (user.role === 'ADMIN') return true;
+    return item.allowedRoles.includes(user.role);
+  });
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -63,7 +73,7 @@ export default function Sidebar({ isOpen, onClose }) {
 
           {/* Navigation Links */}
           <nav className="space-y-1.5" aria-label="Sidebar Navigation">
-            {navItems.map((item) => {
+            {filteredNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink

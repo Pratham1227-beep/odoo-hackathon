@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './features/landing/pages/LandingPage';
 import SignupPage from './features/auth/pages/SignupPage';
 import LoginPage from './features/auth/pages/LoginPage';
+import ChangePasswordPage from './features/auth/pages/ChangePasswordPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import EmployeesPage from './features/employees/pages/EmployeesPage';
 import EmployeeProfilePage from './features/employees/pages/EmployeeProfilePage';
@@ -12,6 +13,7 @@ import LeaveRequestPage from './features/leaveRequest/pages/LeaveRequestPage';
 import SalarySetupPage from './features/salarySetup/pages/SalarySetupPage';
 import AppLayout from './shared/layout/AppLayout';
 import ProtectedRoute from './shared/components/ProtectedRoute';
+import UnauthorizedPage from './shared/components/UnauthorizedPage';
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -48,6 +50,20 @@ export default function App() {
           element={<LoginPage isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}
         />
         <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute>
+              <ChangePasswordPage isDarkMode={isDarkMode} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/unauthorized"
+          element={<UnauthorizedPage isDarkMode={isDarkMode} />}
+        />
+
+        {/* Protected Dashboard Routes */}
+        <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
@@ -60,61 +76,78 @@ export default function App() {
         <Route
           path="/employees"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <EmployeesPage />
-            </AppLayout>
+            <ProtectedRoute>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <EmployeesPage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/employees/:employeeId"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <EmployeeProfilePage />
-            </AppLayout>
+            <ProtectedRoute>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <EmployeeProfilePage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/attendance"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <AttendancePage />
-            </AppLayout>
+            <ProtectedRoute>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <AttendancePage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/time-off"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <TimeOffPage />
-            </AppLayout>
+            <ProtectedRoute>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <TimeOffPage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/leave-request"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <LeaveRequestPage />
-            </AppLayout>
+            <ProtectedRoute>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <LeaveRequestPage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/leave-management"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <LeaveRequestPage />
-            </AppLayout>
+            <ProtectedRoute>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <LeaveRequestPage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
+        
+        {/* Protected Payroll Route - Only HR and Admin */}
         <Route
           path="/salary-setup"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <SalarySetupPage />
-            </AppLayout>
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER']}>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <SalarySetupPage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
+        
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
-}
+}

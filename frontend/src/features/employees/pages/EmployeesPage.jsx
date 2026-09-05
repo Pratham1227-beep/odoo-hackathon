@@ -6,6 +6,7 @@ import EmployeeTable from '../components/EmployeeTable';
 import EmployeePagination from '../components/EmployeePagination';
 import AddEmployeeModal from '../components/AddEmployeeModal';
 import { employeeKPIs, initialEmployees } from '../data/employeesData';
+import { employeeService } from '../services/employeeService';
 
 const avatarThemes = ['purple', 'blue', 'pink', 'teal', 'violet', 'sky', 'rose', 'mint'];
 
@@ -116,9 +117,9 @@ export default function EmployeesPage() {
     setIsModalOpen(true);
   };
 
-  const handleSaveEmployee = (empData) => {
+  const handleSaveEmployee = async (empData) => {
     if (empData.id) {
-      // Update existing employee
+      // Update existing employee (mock)
       setEmployees((prev) =>
         prev.map((item) =>
           item.id === empData.id
@@ -136,26 +137,34 @@ export default function EmployeesPage() {
         )
       );
     } else {
-      // Add new employee
-      const nextIdNumber = employees.length + 1;
-      const formattedId = `EMP${String(nextIdNumber).padStart(3, '0')}`;
-      const initials = empData.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-      const randomTheme =
-        avatarThemes[Math.floor(Math.random() * avatarThemes.length)];
+      try {
+        // Call Backend API to create Employee and provision user
+        const result = await employeeService.createEmployee(empData);
+        
+        alert(`Employee created successfully! Their login credentials have been emailed to them.`);
 
-      const newEmp = {
-        ...empData,
-        id: formattedId,
-        initials: initials || 'EM',
-        avatarTheme: randomTheme,
-      };
+        // Add to local state to reflect UI changes immediately
+        const nextIdNumber = employees.length + 1;
+        const formattedId = result.employee_code || `EMP${String(nextIdNumber).padStart(3, '0')}`;
+        const initials = empData.name
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2);
+        const randomTheme = avatarThemes[Math.floor(Math.random() * avatarThemes.length)];
 
-      setEmployees((prev) => [newEmp, ...prev]);
+        const newEmp = {
+          ...empData,
+          id: formattedId,
+          initials: initials || 'EM',
+          avatarTheme: randomTheme,
+        };
+
+        setEmployees((prev) => [newEmp, ...prev]);
+      } catch (error) {
+        alert("Error creating employee: " + (error.response?.data?.detail || error.message));
+      }
     }
   };
 
