@@ -9,7 +9,8 @@ import {
   Check,
   CheckCircle2,
   X,
-  AlertCircle
+  AlertCircle,
+  Loader2,
 } from 'lucide-react';
 
 import PayslipEmployeeHeader from '../components/PayslipEmployeeHeader';
@@ -24,7 +25,6 @@ import {
   mapPayslipDetailToUi,
   mapPayslipListItem,
 } from '../../payroll/utils/payrollMappers';
-
 import {
   getEmployeePayslip,
   payslipMonths,

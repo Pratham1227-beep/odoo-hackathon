@@ -56,6 +56,19 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """Initialize database tables."""
+    """Initialize database tables by loading all models first."""
+    import app.features.attendance.models  # noqa: F401
+    import app.features.auth.models  # noqa: F401
+    import app.features.contracts.models  # noqa: F401
+    import app.features.employees.models  # noqa: F401
+    import app.features.notifications.models  # noqa: F401
+    import app.features.organization.models  # noqa: F401
+    import app.features.payroll.models  # noqa: F401
+    import app.features.payroll_config.models  # noqa: F401
+    import app.features.reports_dashboard.models  # noqa: F401
+    import app.features.time_off.models  # noqa: F401
+    import app.core.audit  # noqa: F401
+
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+

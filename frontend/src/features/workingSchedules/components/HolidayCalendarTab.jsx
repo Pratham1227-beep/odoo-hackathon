@@ -1,36 +1,64 @@
-import React, { useState } from 'react';
-import { Calendar, Plus, Trash2, CheckCircle2 } from 'lucide-react';
-import { initialHolidays } from '../data/holidayData';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Calendar, Plus, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
+import { attendanceService } from '../../attendance/services/attendanceService';
 
 export default function HolidayCalendarTab() {
-  const [holidays, setHolidays] = useState(initialHolidays);
+  const [holidays, setHolidays] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState('');
-  const [date, setDate] = useState('2026-11-14');
-  const [type, setType] = useState('Gazetted');
+  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [type, setType] = useState('PUBLIC');
 
-  const handleAddHoliday = (e) => {
+  const fetchHolidays = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await attendanceService.listHolidays();
+      if (Array.isArray(data)) {
+        const mapped = data.map((h) => ({
+          id: h.id,
+          name: h.name,
+          date: h.date,
+          displayDate: new Date(h.date).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          }),
+          dayOfWeek: new Date(h.date).toLocaleDateString('en-US', { weekday: 'long' }),
+          type: h.type || 'PUBLIC',
+          description: h.description || 'Organizational public holiday',
+          affectsAllShifts: true,
+        }));
+        setHolidays(mapped);
+      }
+    } catch (err) {
+      console.error('Failed to fetch holidays:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHolidays();
+  }, [fetchHolidays]);
+
+  const handleAddHoliday = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
 
-    const newH = {
-      id: `HOL00${Date.now().toString().slice(-3)}`,
-      name,
-      date,
-      displayDate: new Date(date).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      }),
-      dayOfWeek: new Date(date).toLocaleDateString('en-US', { weekday: 'long' }),
-      type,
-      description: 'Organizational public holiday',
-      affectsAllShifts: true,
-    };
-
-    setHolidays([...holidays, newH]);
-    setName('');
-    setIsAdding(false);
+    try {
+      await attendanceService.createHoliday({
+        name: name.trim(),
+        date: date,
+        type: type,
+        description: 'Organizational holiday',
+      });
+      setName('');
+      setIsAdding(false);
+      fetchHolidays();
+    } catch (err) {
+      alert('Error creating holiday: ' + (err.response?.data?.error?.message || err.message));
+    }
   };
 
   const handleDeleteHoliday = (id) => {

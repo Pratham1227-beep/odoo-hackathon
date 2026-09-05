@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle2, AlertTriangle, XCircle, Info, X } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, XCircle, Info, X, Loader2 } from 'lucide-react';
 
 import PayrunBreadcrumbs from '../components/PayrunBreadcrumbs';
 import PayrunProcessingHeader from '../components/PayrunProcessingHeader';
@@ -20,6 +20,8 @@ import {
   initialPayrunPeriods,
   evaluateValidationResults,
 } from '../data/payrunData';
+import { reportsService } from '../../reports/services/reportsService';
+import { employeeService } from '../../employees/services/employeeService';
 
 export default function PayrunProcessingPage() {
   const navigate = useNavigate();

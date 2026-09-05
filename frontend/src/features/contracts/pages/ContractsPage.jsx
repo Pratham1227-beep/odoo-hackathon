@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import ContractHeader from '../components/ContractHeader';
 import ContractStats from '../components/ContractStats';
 import ContractFilterBar from '../components/ContractFilterBar';
@@ -17,12 +17,15 @@ import ContractDocumentViewer from '../components/ContractDocumentViewer';
 import ContractTemplatesModal from '../components/ContractTemplatesModal';
 import ImportContractsModal from '../components/ImportContractsModal';
 
+import { contractService } from '../services/contractService';
 import { initialContracts, computeContractStats } from '../data/contractsData';
+import { Loader2 } from 'lucide-react';
 
 export default function ContractsPage() {
   // Master contracts state
-  const [contracts, setContracts] = useState(initialContracts);
-  const [selectedContractId, setSelectedContractId] = useState('CON001');
+  const [contracts, setContracts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedContractId, setSelectedContractId] = useState(null);
 
   // Multi-row selection for bulk operations
   const [selectedIds, setSelectedIds] = useState([]);
@@ -58,6 +61,51 @@ export default function ContractsPage() {
     setToastMessage({ msg, type });
     setTimeout(() => setToastMessage(null), 3500);
   };
+
+  const fetchContracts = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await contractService.getContracts({ page: 1, page_size: 100 });
+      if (res?.items) {
+        const mapped = res.items.map((c) => {
+          const empName = c.employee ? `${c.employee.first_name || ''} ${c.employee.last_name || ''}`.trim() : 'Employee';
+          let formattedStatus = 'Active';
+          if (c.status === 'ACTIVE') formattedStatus = 'Active';
+          else if (c.status === 'EXPIRED') formattedStatus = 'Expired';
+          else if (c.status === 'TERMINATED') formattedStatus = 'Expired';
+          else if (c.status === 'DRAFT') formattedStatus = 'Draft';
+
+          return {
+            id: c.contract_code || c.id,
+            realId: c.id,
+            employeeId: c.employee?.employee_code || c.employee_id,
+            employeeName: empName,
+            department: c.employee?.department?.name || 'General',
+            designation: c.designation_title || c.employee?.designation?.title || 'Staff',
+            contractType: c.type === 'PERMANENT' ? 'Full-Time Permanent' : c.type === 'CONSULTANT' ? 'Consultancy' : 'Probationary',
+            salaryType: c.wage_type === 'MONTHLY' ? 'Monthly Fixed' : 'Hourly',
+            grossSalary: c.base_wage ? `₹${Number(c.base_wage).toLocaleString('en-IN')}` : '₹0',
+            startDate: c.start_date,
+            endDate: c.end_date || 'Indefinite',
+            status: formattedStatus,
+            structureName: c.salary_structure?.name || 'Standard Structure',
+          };
+        });
+        setContracts(mapped);
+        if (mapped.length > 0 && !selectedContractId) {
+          setSelectedContractId(mapped[0].id);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load contracts:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedContractId]);
+
+  useEffect(() => {
+    fetchContracts();
+  }, [fetchContracts]);
 
   // Currently inspected contract in right sidebar
   const activeSelectedContract = useMemo(() => {

@@ -8,6 +8,7 @@ import {
   ExternalLink,
   Download,
   Users,
+  Loader2,
 } from 'lucide-react';
 import { recentBatches } from '../data/payrollData';
 import { payrollService } from '../services/payrollService';
@@ -37,7 +38,7 @@ export default function RecentPayrollBatches() {
 
   const handleDownloadSummary = (id) => {
     setDownloadedId(id);
-    const batch = batches.find((b) => b.id === id);
+    const batch = batches.find((b) => b.id === id) || batches[0];
     if (!batch) return;
 
     const content = `Batch ID: ${batch.id}\nPeriod: ${batch.period}\nEmployees: ${batch.employeesCount}\nGross Payout: ${batch.grossPayout}\nNet Payout: ${batch.netPayout}\nStatus: ${batch.status}\nPay Date: ${batch.payDate}\n`;

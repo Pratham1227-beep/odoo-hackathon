@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './features/landing/pages/LandingPage';
 import SignupPage from './features/auth/pages/SignupPage';
 import LoginPage from './features/auth/pages/LoginPage';
+import ChangePasswordPage from './features/auth/pages/ChangePasswordPage';
 import DashboardPage from './features/dashboard/pages/DashboardPage';
 import EmployeesPage from './features/employees/pages/EmployeesPage';
 import EmployeeProfilePage from './features/employees/pages/EmployeeProfilePage';
@@ -58,6 +59,14 @@ export default function App() {
           element={<LoginPage isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}
         />
         <Route
+          path="/change-password"
+          element={
+            <ProtectedRoute>
+              <ChangePasswordPage isDarkMode={isDarkMode} />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
@@ -70,9 +79,11 @@ export default function App() {
         <Route
           path="/employees"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <EmployeesPage />
-            </AppLayout>
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER']}>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <EmployeesPage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route
@@ -240,17 +251,21 @@ export default function App() {
         <Route
           path="/contracts"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <ContractsPage />
-            </AppLayout>
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER']}>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <ContractsPage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route
           path="/workforce/contracts"
           element={
-            <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
-              <ContractsPage />
-            </AppLayout>
+            <ProtectedRoute allowedRoles={['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER']}>
+              <AppLayout isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode}>
+                <ContractsPage />
+              </AppLayout>
+            </ProtectedRoute>
           }
         />
         <Route

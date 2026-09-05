@@ -14,6 +14,16 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/peoplepay360"
 
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_database_url(cls, v: Any) -> str:
+        if isinstance(v, str):
+            if v.startswith("postgresql://"):
+                return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            if v.startswith("postgres://"):
+                return v.replace("postgres://", "postgresql+asyncpg://", 1)
+        return v
+
     # Security & Auth
     JWT_SECRET_KEY: str = "peoplepay360_super_secret_jwt_key_for_hackathon_2026_change_in_prod"
     JWT_ALGORITHM: str = "HS256"

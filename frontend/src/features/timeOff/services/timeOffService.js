@@ -14,9 +14,19 @@ export const timeOffService = {
   // ==========================================
   // Leave Types API
   // ==========================================
-  listLeaveTypes: async (isActive = null) => {
+  listLeaveTypes: async (paramsOrActive = null) => {
+    const params = typeof paramsOrActive === 'boolean' || paramsOrActive === null
+      ? { is_active: paramsOrActive }
+      : paramsOrActive;
     const response = await apiClient.get('/time-off/types', {
-      params: buildParams({ is_active: isActive }),
+      params: buildParams(params),
+    });
+    return response.data;
+  },
+
+  getLeaveTypes: async (params = {}) => {
+    const response = await apiClient.get('/time-off/types', {
+      params: buildParams(params),
     });
     return response.data;
   },
@@ -30,6 +40,13 @@ export const timeOffService = {
   // Leave Allocations API
   // ==========================================
   listAllocations: async (params = {}) => {
+    const response = await apiClient.get('/time-off/allocations', {
+      params: buildParams(params),
+    });
+    return response.data;
+  },
+
+  getAllocations: async (params = {}) => {
     const response = await apiClient.get('/time-off/allocations', {
       params: buildParams(params),
     });
@@ -51,6 +68,13 @@ export const timeOffService = {
     return response.data;
   },
 
+  getRequests: async (params = {}) => {
+    const response = await apiClient.get('/time-off/requests', {
+      params: buildParams(params),
+    });
+    return response.data;
+  },
+
   createRequest: async (payload) => {
     const response = await apiClient.post('/time-off/requests', payload);
     return response.data;
@@ -65,8 +89,16 @@ export const timeOffService = {
   // Holidays API
   // ==========================================
   listHolidays: async (year = null) => {
+    const params = typeof year === 'object' && year !== null ? year : { year };
     const response = await apiClient.get('/holidays', {
-      params: buildParams({ year }),
+      params: buildParams(params),
+    });
+    return response.data;
+  },
+
+  getHolidays: async (params = {}) => {
+    const response = await apiClient.get('/holidays', {
+      params: buildParams(params),
     });
     return response.data;
   },

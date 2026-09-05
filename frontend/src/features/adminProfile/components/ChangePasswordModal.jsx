@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, KeyRound, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
+import { X, KeyRound, Lock, Eye, EyeOff, ShieldCheck, Loader2 } from 'lucide-react';
+import { authService } from '../../auth/services/authService';
 
 export default function ChangePasswordModal({ isOpen, onClose, onSuccess }) {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -7,10 +8,11 @@ export default function ChangePasswordModal({ isOpen, onClose, onSuccess }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (newPassword.length < 8) {
       setError('New password must be at least 8 characters long.');
@@ -20,9 +22,22 @@ export default function ChangePasswordModal({ isOpen, onClose, onSuccess }) {
       setError('New password and confirmation do not match.');
       return;
     }
-    setError('');
-    onSuccess('Password updated successfully.');
-    onClose();
+
+    try {
+      setLoading(true);
+      setError('');
+      await authService.changePassword({
+        old_password: currentPassword,
+        new_password: newPassword,
+      });
+      onSuccess('Password updated successfully.');
+      onClose();
+    } catch (err) {
+      const msg = err.response?.data?.detail || err.message || 'Failed to update password.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -44,7 +59,7 @@ export default function ChangePasswordModal({ isOpen, onClose, onSuccess }) {
               </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg">
+          <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -110,15 +125,17 @@ export default function ChangePasswordModal({ isOpen, onClose, onSuccess }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+              disabled={loading}
+              className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 px-4.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs cursor-pointer"
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-4.5 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs cursor-pointer disabled:opacity-60"
             >
-              <ShieldCheck className="w-3.5 h-3.5" />
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
               <span>Update Password</span>
             </button>
           </div>

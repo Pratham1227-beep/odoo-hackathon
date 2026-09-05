@@ -633,7 +633,7 @@ export default function AttendancePage() {
                   </button>
                   <button
                     onClick={() => setSelectedIds([])}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl"
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl cursor-pointer"
                     aria-label="Clear selection"
                   >
                     <X className="w-4 h-4" />

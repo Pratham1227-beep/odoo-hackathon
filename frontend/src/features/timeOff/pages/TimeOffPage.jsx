@@ -343,9 +343,6 @@ export default function TimeOffPage() {
     showToast(`Exported ${toExport.length} requests to CSV`);
   };
 
-
-
-
   return (
     <div className="space-y-6 pb-10 animate-in fade-in duration-200 relative">
       {/* Toast Notification */}

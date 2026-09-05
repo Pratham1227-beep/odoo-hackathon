@@ -2,8 +2,28 @@ import React from 'react';
 import { attendanceReportData } from '../data/reportsData';
 import { Clock, AlertCircle } from 'lucide-react';
 
-export default function AttendanceReportsView() {
-  const totalOvertime = attendanceReportData.reduce((acc, curr) => acc + curr.overtimeHours, 0);
+export default function AttendanceReportsView({ attendanceData }) {
+  // Use live department breakdown from attendance data if available
+  const rows = (attendanceData?.department_breakdown && attendanceData.department_breakdown.length > 0)
+    ? attendanceData.department_breakdown.map((item) => {
+        const total = (item.present_count + item.late_count + item.absent_count + item.half_day_count) || 1;
+        const presentPct = Math.round((item.present_count / total) * 100);
+        const latePct = Math.round((item.late_count / total) * 100);
+        const absentPct = Math.round((item.absent_count / total) * 100);
+
+        return {
+          department: item.department_name,
+          present: presentPct,
+          late: latePct,
+          absent: absentPct,
+          overtimeHours: item.total_overtime_hours || 0,
+        };
+      })
+    : attendanceReportData;
+
+  const totalOvertime = attendanceData?.total_overtime_hours !== undefined
+    ? attendanceData.total_overtime_hours
+    : rows.reduce((acc, curr) => acc + curr.overtimeHours, 0);
 
   return (
     <div className="space-y-6">
@@ -38,7 +58,7 @@ export default function AttendanceReportsView() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-              {attendanceReportData.map((row) => (
+              {rows.map((row) => (
                 <tr key={row.department} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                   <td className="py-3.5 px-4 font-semibold text-slate-900 dark:text-white">
                     {row.department}
@@ -57,7 +77,7 @@ export default function AttendanceReportsView() {
                   </td>
                   <td className="py-3.5 px-4">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-                      Optimal (≥95%)
+                      Optimal (≥90%)
                     </span>
                   </td>
                 </tr>

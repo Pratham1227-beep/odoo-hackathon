@@ -104,21 +104,21 @@ export const quickActions = [
     title: 'Add Employee',
     icon: 'UserPlus',
     colorTheme: 'teal', // teal, purple, blue, orange
-    path: '/employees/new',
+    path: '/employees',
   },
   {
     id: 'qa-mark-attendance',
     title: 'Mark Attendance',
     icon: 'Calendar',
     colorTheme: 'purple',
-    path: '/attendance/mark',
+    path: '/attendance',
   },
   {
     id: 'qa-create-payslip',
     title: 'Create Payslip',
     icon: 'FileSpreadsheet',
     colorTheme: 'blue',
-    path: '/payroll/payslips',
+    path: '/payrun',
   },
   {
     id: 'qa-view-reports',

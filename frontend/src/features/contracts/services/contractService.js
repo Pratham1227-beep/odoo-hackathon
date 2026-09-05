@@ -11,6 +11,13 @@ const buildParams = (params = {}) => {
 };
 
 export const contractService = {
+  getContracts: async (params = {}) => {
+    const response = await apiClient.get('/contracts', {
+      params: buildParams(params),
+    });
+    return response.data;
+  },
+
   listContracts: async (params = {}) => {
     const response = await apiClient.get('/contracts', {
       params: buildParams(params),
@@ -18,13 +25,18 @@ export const contractService = {
     return response.data;
   },
 
-  createContract: async (payload) => {
-    const response = await apiClient.post('/contracts', payload);
+  getContract: async (contractId) => {
+    const response = await apiClient.get(`/contracts/${contractId}`);
     return response.data;
   },
 
-  getContract: async (contractId) => {
+  getContractById: async (contractId) => {
     const response = await apiClient.get(`/contracts/${contractId}`);
+    return response.data;
+  },
+
+  createContract: async (payload) => {
+    const response = await apiClient.post('/contracts', payload);
     return response.data;
   },
 

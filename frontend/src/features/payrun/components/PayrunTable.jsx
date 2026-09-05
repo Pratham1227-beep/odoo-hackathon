@@ -4,7 +4,7 @@ import PayrunRowActions from './PayrunRowActions';
 
 export default function PayrunTable({
   employees = [],
-  totalEmployeesCount = 118,
+  totalEmployeesCount = 0,
   selectedIds = [],
   onToggleSelect,
   onToggleSelectAll,

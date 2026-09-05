@@ -108,7 +108,7 @@ class EmployeeBase(BaseSchema):
         None, max_length=50, description="Unique employee ID / code (auto-generated if empty)"
     )
     first_name: str = Field(..., min_length=1, max_length=100)
-    last_name: str = Field(..., min_length=1, max_length=100)
+    last_name: str = Field(default="", max_length=100)
     email: EmailStr = Field(..., description="Corporate or official employee email")
     phone: Optional[str] = Field(None, max_length=50)
 

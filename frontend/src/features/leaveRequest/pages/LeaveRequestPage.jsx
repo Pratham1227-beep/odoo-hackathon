@@ -30,7 +30,7 @@ export default function LeaveRequestPage() {
   // Selection & Filters State
   const [selectedRequestId, setSelectedRequestId] = useState(null);
   const [activeTab, setActiveTab] = useState('All');
-  const [selectedMonth, setSelectedMonth] = useState('Sep 2026');
+  const [selectedMonth, setSelectedMonth] = useState('All Months');
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
     leaveType: 'All Types',
@@ -163,7 +163,16 @@ export default function LeaveRequestPage() {
       if (activeTab === 'Rejected' && req.status !== 'Rejected') return false;
       if (activeTab === 'Cancelled' && req.status !== 'Cancelled') return false;
 
-      // 2. Search query (matches employee name, ID, leave type, reason)
+      // 2. Month filter (e.g. "Sep 2026")
+      if (selectedMonth !== 'All Months') {
+        const matchesMonth =
+          req.startDate?.includes(selectedMonth.split(' ')[0]) ||
+          req.endDate?.includes(selectedMonth.split(' ')[0]) ||
+          req.appliedOn?.includes(selectedMonth.split(' ')[0]);
+        if (!matchesMonth) return false;
+      }
+
+      // 3. Search query (matches employee name, ID, leave type, reason)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchesName = (req.employeeName || '').toLowerCase().includes(q);
@@ -173,7 +182,7 @@ export default function LeaveRequestPage() {
         if (!matchesName && !matchesId && !matchesType && !matchesReason) return false;
       }
 
-      // 3. Leave Type filter
+      // 4. Leave Type filter
       if (
         filters.leaveType &&
         filters.leaveType !== 'All Types' &&
@@ -182,7 +191,7 @@ export default function LeaveRequestPage() {
         return false;
       }
 
-      // 4. Status filter
+      // 5. Status filter
       if (
         filters.status &&
         filters.status !== 'All Statuses' &&
@@ -191,7 +200,7 @@ export default function LeaveRequestPage() {
         return false;
       }
 
-      // 5. Department filter
+      // 6. Department filter
       if (
         filters.department &&
         filters.department !== 'All Departments' &&
@@ -202,7 +211,7 @@ export default function LeaveRequestPage() {
 
       return true;
     });
-  }, [formattedRequests, activeTab, searchQuery, filters]);
+  }, [formattedRequests, activeTab, selectedMonth, searchQuery, filters]);
 
   // Selected Request for Right Rail Details Preview
   const selectedRequest = useMemo(() => {
@@ -249,7 +258,7 @@ export default function LeaveRequestPage() {
       status: 'All Statuses',
       department: 'All Departments',
     });
-    setSelectedMonth('Sep 2026');
+    setSelectedMonth('All Months');
     setSearchQuery('');
     setActiveTab('All');
     setCurrentPage(1);

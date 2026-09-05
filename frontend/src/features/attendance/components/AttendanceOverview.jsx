@@ -1,15 +1,15 @@
 import React from 'react';
 
 export default function AttendanceOverview({
-  totalEmployees = 118,
-  presentCount = 92,
-  absentCount = 14,
-  leaveCount = 12,
+  totalEmployees = 0,
+  presentCount = 0,
+  absentCount = 0,
+  leaveCount = 0,
 }) {
-  const safeTotal = totalEmployees || 118;
-  const presentPct = ((presentCount / safeTotal) * 100).toFixed(1);
-  const absentPct = ((absentCount / safeTotal) * 100).toFixed(1);
-  const leavePct = ((leaveCount / safeTotal) * 100).toFixed(1);
+  const safeTotal = totalEmployees || (presentCount + absentCount + leaveCount) || 0;
+  const presentPct = safeTotal > 0 ? ((presentCount / safeTotal) * 100).toFixed(1) : 0;
+  const absentPct = safeTotal > 0 ? ((absentCount / safeTotal) * 100).toFixed(1) : 0;
+  const leavePct = safeTotal > 0 ? ((leaveCount / safeTotal) * 100).toFixed(1) : 0;
 
   const data = [
     {

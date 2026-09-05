@@ -7,7 +7,8 @@ import {
   Send,
   Sparkles,
   Info,
-  X
+  X,
+  Loader2,
 } from 'lucide-react';
 
 import PayrunHeader from '../components/PayrunHeader';
@@ -37,7 +38,6 @@ import {
 } from '../../payroll/utils/payrollMappers';
 
 import {
-  initialEmployees,
   initialPayrunPeriods,
   initialSalaryStructures,
   initialRecentPayruns,
@@ -55,11 +55,12 @@ export default function PayrunPage() {
 
   // State
   const [selectedPeriod, setSelectedPeriod] = useState('September 2026');
-  const [employees, setEmployees] = useState(initialEmployees);
+  const [employees, setEmployees] = useState([]);
   const [recentPayruns, setRecentPayruns] = useState(initialRecentPayruns);
   const [structures, setStructures] = useState(initialSalaryStructures);
   const [stages, setStages] = useState(initialStages);
   const [currentStageNumber, setCurrentStageNumber] = useState(5);
+  const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [activePayrunId, setActivePayrunId] = useState(urlPayrunId || null);
 
@@ -137,6 +138,8 @@ export default function PayrunPage() {
       }
     } catch (err) {
       console.warn('Payrun data load fallback to demo state:', err.message);
+    } finally {
+      setIsLoading(false);
     }
   }, [urlPayrunId]);
 

@@ -80,6 +80,9 @@ class ConflictError(AppException):
         )
 
 
+from fastapi.exceptions import RequestValidationError
+
+
 def setup_exception_handlers(app: FastAPI) -> None:
     """Register standard exception handlers with FastAPI application."""
 
@@ -95,4 +98,23 @@ def setup_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=exc.status_code,
             content={"error": error_payload},
+        )
+
+    @app.exception_handler(RequestValidationError)
+    async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+        error_msgs = []
+        for err in exc.errors():
+            loc = " -> ".join([str(x) for x in err.get("loc", []) if x != "body"])
+            msg = err.get("msg", "Invalid value")
+            error_msgs.append(f"{loc}: {msg}" if loc else msg)
+
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "error": {
+                    "code": "VALIDATION_ERROR",
+                    "message": "; ".join(error_msgs) or "Invalid request parameters",
+                    "details": exc.errors(),
+                }
+            },
         )

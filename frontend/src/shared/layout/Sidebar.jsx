@@ -14,22 +14,25 @@ import {
   FileText,
   SlidersHorizontal,
   PlayCircle,
-  Receipt,
+  Briefcase,
   CalendarDays,
-  Bell
+  Bell,
+  ShieldCheck,
 } from 'lucide-react';
 import WageWiseLogo from '../components/WageWiseLogo';
 import { useAuthStore } from '../../store/useAuthStore';
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'Employees', path: '/employees', icon: Users },
+  { name: 'Employees', path: '/employees', icon: Users, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
+  { name: 'Contracts', path: '/contracts', icon: Briefcase, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER'] },
   { name: 'Attendance', path: '/attendance', icon: Clock },
   { name: 'Time Off', path: '/time-off', icon: Calendar },
   { name: 'Leave Request', path: '/leave-request', icon: FileText },
-  { name: 'Payroll', path: '/payroll', icon: Coins, allowedRoles: ['ADMIN', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
-  { name: 'Salary Setup', path: '/salary-setup', icon: SlidersHorizontal, allowedRoles: ['ADMIN', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
-  { name: 'Payslips', path: '/payslips', icon: Receipt },
+  { name: 'Working Schedules', path: '/working-schedules', icon: CalendarDays },
+  { name: 'Payroll', path: '/payroll', icon: Coins, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
+  { name: 'Payrun Processing', path: '/payrun', icon: PlayCircle, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
+  { name: 'Salary Setup', path: '/salary-setup', icon: SlidersHorizontal, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER', 'HR_PAYROLL_USER'] },
   { name: 'Reports', path: '/reports', icon: BarChart3, allowedRoles: ['ADMIN', 'HR_MANAGER', 'HR_PAYROLL_MANAGER'] },
   { name: 'Settings', path: '/settings', icon: Settings, allowedRoles: ['ADMIN', 'HR_MANAGER'] },
 ];
@@ -37,9 +40,9 @@ const navItems = [
 export default function Sidebar({ isOpen, onClose }) {
   const { user } = useAuthStore();
 
-  const filteredNavItems = navItems.filter(item => {
+  const filteredNavItems = navItems.filter((item) => {
     if (!item.allowedRoles) return true;
-    if (!user) return false;
+    if (!user) return true; // Show by default if session state is still loading
     if (user.role === 'ADMIN') return true;
     return item.allowedRoles.includes(user.role);
   });
@@ -68,7 +71,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </Link>
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hidden rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 lg:hidden rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
             aria-label="Close sidebar"
           >
             <X className="w-5 h-5" />
@@ -76,10 +79,10 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
 
         {/* Scrollable Area for Nav Items & Bottom Card */}
-        <div className="flex-1 overflow-y-auto min-h-0 pt-3 space-y-5 pr-1 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto min-h-0 pt-3 space-y-4 pr-1 custom-scrollbar">
           {/* Navigation Links */}
-          <nav className="space-y-1" aria-label="Sidebar Navigation">
-            {navItems.map((item) => {
+          <nav className="space-y-0.5" aria-label="Sidebar Navigation">
+            {filteredNavItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -87,14 +90,14 @@ export default function Sidebar({ isOpen, onClose }) {
                   to={item.path}
                   onClick={() => onClose && onClose()}
                   className={({ isActive }) =>
-                    `flex items-center gap-3.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-150 relative ${
+                    `flex items-center gap-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-150 relative ${
                       isActive
                         ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold shadow-2xs before:absolute before:-left-3.5 before:top-2 before:bottom-2 before:w-1.5 before:bg-indigo-600 before:rounded-r-md'
                         : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-slate-200'
                     }`
                   }
                 >
-                  <Icon className="w-4.5 h-4.5 shrink-0" />
+                  <Icon className="w-4 h-4 shrink-0" />
                   <span>{item.name}</span>
                 </NavLink>
               );
@@ -102,31 +105,30 @@ export default function Sidebar({ isOpen, onClose }) {
           </nav>
 
           {/* Bottom "Need Help?" Card inside scrollable flow */}
-          <div className="relative rounded-2xl bg-indigo-50/70 dark:bg-slate-800/60 border border-indigo-100/80 dark:border-slate-700/60 p-4 space-y-3 mt-4">
-            {/* 3D-styled Floating Icon */}
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-teal-400 p-0.5 shadow-md shadow-indigo-500/20 flex items-center justify-center">
+          <div className="relative rounded-2xl bg-indigo-50/70 dark:bg-slate-800/60 border border-indigo-100/80 dark:border-slate-700/60 p-4 space-y-2.5 mt-2">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-teal-400 p-0.5 shadow-md shadow-indigo-500/20 flex items-center justify-center">
               <div className="w-full h-full bg-white dark:bg-slate-900 rounded-[9px] flex items-center justify-center">
-                <Sparkles className="w-4.5 h-4.5 text-indigo-600 dark:text-indigo-400" />
+                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                Need Help?
+            <div className="space-y-0.5">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                WageWise Live
               </h4>
-              <p className="text-2xs sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                Check our guides or contact support.
+              <p className="text-2xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                All modules synchronized with live payroll backend.
               </p>
             </div>
 
             <div>
-              <a
-                href="#support"
+              <Link
+                to="/reports"
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
               >
-                <span>Get Support</span>
+                <span>View Analytics</span>
                 <ArrowRight className="w-3.5 h-3.5" />
-              </a>
+              </Link>
             </div>
           </div>
         </div>

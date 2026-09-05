@@ -4,7 +4,7 @@ import { Search, Filter, ChevronDown, Check } from 'lucide-react';
 export default function PayrunTabs({
   activeTab = 'All',
   onSelectTab,
-  tabCounts = { All: 118, Processed: 112, Pending: 6, 'On Hold': 0 },
+  tabCounts = { All: 0, Processed: 0, Pending: 0, 'On Hold': 0 },
   searchQuery = '',
   onSearchChange,
   departmentFilter = 'All',

@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -116,7 +116,6 @@ async def reset_password(
 
 @router.post(
     "/change-password",
-    response_model=MessageResponse,
     summary="Change Password (Authenticated)",
     description="Allows authenticated users to change their password, immediately bumping token_version to invalidate prior sessions.",
 )
@@ -124,12 +123,16 @@ async def change_password(
     req: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> MessageResponse:
+):
     service = AuthService(db)
-    await service.change_password(current_user, req)
-    return MessageResponse(
-        message="Password updated successfully. Other active sessions have been invalidated."
-    )
+    new_tokens = await service.change_password(current_user, req)
+    return {
+        "message": "Password updated successfully. Other active sessions have been invalidated.",
+        "tokens": {
+            "access_token": new_tokens.access_token,
+            "refresh_token": new_tokens.refresh_token,
+        }
+    }
 
 
 @router.get(
